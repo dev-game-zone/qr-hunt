@@ -4,18 +4,14 @@
   <meta charset="utf-8">
   <title>Scavenger Hunt – Game</title>
   <link rel="stylesheet" href="../../styles/styles.css">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body class="game">
 <main>
   <h2>Find the QR codes to reveal the letters!</h2>
 
-  <!-- Visual letter progress -->
-  <p id="progress">Letters found:</p>
+  <!-- Letter progress area -->
   <div id="letters-container"></div>
-
-  <!-- Progress count + completion area -->
-  <div id="completion"></div>
+  <p id="progress-text">Found 0 of 0 letters</p>
 
   <!-- Buttons -->
   <div class="button-group">
@@ -23,91 +19,71 @@
     <button id="reset">Reset Progress</button>
   </div>
 
+  <!-- Completion area -->
+  <div id="completion">
+    <span class="completion-label">Your completion code:</span><br>
+    <span id="completion-code"></span>
+  </div>
+
   <p id="msg"></p>
 </main>
 
+<!-- Scripts -->
 <script src="../../scripts/config.js"></script>
 <script src="../../scripts/app.js"></script>
-<script src="../../scripts/qrcode.min.js"></script>
-
 <script>
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
   const lettersContainer = document.getElementById("letters-container");
-  const msg = document.getElementById("msg");
+  const progressText = document.getElementById("progress-text");
+  const completionCodeEl = document.getElementById("completion-code");
   const scanBtn = document.getElementById("scan");
   const resetBtn = document.getElementById("reset");
-  const completion = document.getElementById("completion");
+  const msg = document.getElementById("msg");
 
-  // Access guard
   if (sessionStorage.getItem("access") !== "granted") {
     window.location.href = CONFIG.BASE_PATH + "index.html";
     return;
   }
 
-  const HIDDEN = (CONFIG.HIDDEN_PHRASE || "").split("");
-
-  function countIn(arr, ch) {
-    return arr.reduce((n, x) => n + (x === ch ? 1 : 0), 0);
-  }
+  const allLetters = Object.values(CONFIG.LETTER_MAP);
+  const totalLetters = allLetters.length;
 
   function renderLetters() {
-    lettersContainer.innerHTML = "";
     const collected = store.letters;
-
-    HIDDEN.forEach((letter, i) => {
-      const box = document.createElement("div");
-      box.textContent = letter;
-      box.classList.add("letter-box");
-
-      const requiredUpToThis = countIn(HIDDEN.slice(0, i + 1), letter);
-      const collectedCount = countIn(collected, letter);
-
-      if (collectedCount >= requiredUpToThis) {
-        box.classList.add("collected");
-      }
-
-      lettersContainer.appendChild(box);
+    lettersContainer.innerHTML = "";
+    allLetters.forEach(letter => {
+      const div = document.createElement("div");
+      div.className = "letter-box";
+      div.textContent = letter;
+      if (collected.includes(letter)) div.classList.add("collected");
+      lettersContainer.appendChild(div);
     });
-
-    updateCompletion(collected);
+    progressText.textContent = `Found ${collected.length} of ${totalLetters} letters`;
   }
 
-  async function updateCompletion(collected) {
-    const requiredTotal = HIDDEN.length;
-    const collectedCount = Math.min(collected.length, requiredTotal);
+  async function checkCompletion() {
+    const collected = store.letters;
+    if (collected.length === totalLetters) {
+      const code = await generateCompletionCode(CONFIG.HIDDEN_PHRASE);
+      completionCodeEl.textContent = code;
+      completionCodeEl.classList.add("visible", "glow");
 
-    // Default progress message
-    completion.innerHTML = `<p class="progress-text">Progress: <strong>${collectedCount}</strong> / ${requiredTotal}</p>`;
-
-    // All letters found
-    if (collectedCount >= requiredTotal) {
-      const code = await generateCompletionCode(HIDDEN.join(""));
-
-      completion.innerHTML = `
-        <p class="success">🎉 All letters found!</p>
-        <p class="completion-label">Your completion code:</p>
-        <span id="completion-code" class="copyable">${code}</span>
-        <p id="copy-msg" class="copy-msg"></p>
-      `;
-
-      const codeEl = document.getElementById("completion-code");
-      const copyMsg = document.getElementById("copy-msg");
-
-      codeEl.addEventListener("click", async () => {
-        try {
-          await navigator.clipboard.writeText(code);
-          copyMsg.textContent = "✅ Copied!";
-          setTimeout(() => (copyMsg.textContent = ""), 1500);
-        } catch {
-          copyMsg.textContent = "⚠️ Could not copy.";
-        }
-      });
+      // Only trigger confetti once per user
+      if (!localStorage.getItem("completed")) {
+        launchConfetti();
+        localStorage.setItem("completed", "true");
+      }
+    } else {
+      completionCodeEl.textContent = "";
+      completionCodeEl.classList.remove("visible", "glow");
+      localStorage.removeItem("completed");
     }
   }
 
   resetBtn.onclick = () => {
     store.reset();
     renderLetters();
+    checkCompletion();
     msg.textContent = "Progress cleared!";
   };
 
@@ -115,9 +91,55 @@ window.addEventListener("DOMContentLoaded", () => {
     window.location.href = CONFIG.BASE_PATH + "pages/scan/scan.html";
   };
 
-  window.addEventListener("storage", renderLetters);
   renderLetters();
+  checkCompletion();
 });
+
+
+// 🎉 Confetti Effect
+function launchConfetti() {
+  const canvas = document.createElement("canvas");
+  canvas.id = "confetti-canvas";
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const confetti = [];
+  const colors = ["#ff0", "#0f0", "#00f", "#f00", "#ff69b4", "#ffa500"];
+
+  for (let i = 0; i < 120; i++) {
+    confetti.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height - canvas.height,
+      r: Math.random() * 6 + 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      speed: Math.random() * 3 + 2,
+    });
+  }
+
+  let frame;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    confetti.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+      p.y += p.speed;
+      if (p.y > canvas.height) p.y = -10;
+    });
+    frame = requestAnimationFrame(draw);
+  }
+
+  draw();
+
+  setTimeout(() => {
+    cancelAnimationFrame(frame);
+    canvas.remove();
+  }, 3000);
+}
 </script>
 </body>
 </html>
