@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>QR Code Generator</title>
+<link rel="stylesheet" href="/styles/styles.css">
+<script src="/scripts/config.js"></script>
+<script src="/scripts/qrcode.min.js"></script>
+<style>
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:12px}
+  .qrCard{text-align:center;padding:8px;border:1px dashed #ccc;border-radius:6px;background:#fff}
+  img.qr{width:140px;height:140px;margin:6px auto;display:block}
+  .small{font-size:.9rem;color:#333}
+  button{margin-top:6px}
+</style>
+</head>
+<body>
+<main>
+  <h2>QR Code Generator</h2>
+  <p class="small">Generates printable QR codes for each ID in <code>config.js</code>.</p>
+  <button id="genBtn">Generate QR Codes</button>
+  <button onclick="window.print()">Print Gallery</button>
+  <div id="gallery" class="grid"></div>
+</main>
+
+<script>
+const gallery = document.getElementById('gallery');
+document.getElementById('genBtn').onclick = () => {
+  gallery.innerHTML = '';
+  const ids = Object.keys(CONFIG.LETTER_MAP);
+  ids.forEach(id => {
+    const container = document.createElement('div');
+    container.className = 'qrCard';
+    
+    const title = document.createElement('div');
+    title.textContent = id;
+    title.className = 'small';
+    container.appendChild(title);
+    
+    const letter = CONFIG.LETTER_MAP[id];
+    const note = document.createElement('div');
+    note.textContent = `Letter: ${letter}`;
+    note.className = 'small';
+    container.appendChild(note);
+    
+    const qrDiv = document.createElement('div');
+    container.appendChild(qrDiv);
+    
+    const qr = new QRCode(qrDiv, {
+      text: `CODE=${id}`,
+      width: 140,
+      height: 140,
+      colorDark : "#000000",
+      colorLight : "#ffffff",
+      correctLevel : QRCode.CorrectLevel.M
+    });
+
+    const dl = document.createElement('a');
+    dl.textContent = 'Download PNG';
+    dl.href = '#';
+    dl.className = 'small';
+    dl.style.display = 'block';
+    container.appendChild(dl);
+
+    setTimeout(() => {
+      const img = qrDiv.querySelector('img');
+      if(img){
+        dl.href = img.src;
+        dl.download = id + '.png';
+      }
+    }, 100);
+
+    gallery.appendChild(container);
+  });
+};
+</script>
+</body>
+</html>
