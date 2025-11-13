@@ -40,25 +40,40 @@ window.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // Define all letters for this game
-  const ALL_LETTERS = ["A","B","C","D","E","F"];
+  // Use HIDDEN_PHRASE from CONFIG so the UI reflects the expected final word/order
+  const HIDDEN = (CONFIG.HIDDEN_PHRASE || "").split("");
 
-  // Render letters with grey/green boxes
+  // Render letters with grey/green boxes, accounting for duplicates:
+  // A letter box at position i is "collected" only if the player has scanned
+  // at least N occurrences of that letter, where N is how many times that
+  // letter appears in HIDDEN[0..i].
   function renderLetters() {
     lettersContainer.innerHTML = "";
-    const collected = store.letters;
+    const collected = store.letters; // array of scanned letters, e.g. ["A","R","T"]
 
-    ALL_LETTERS.forEach(letter => {
+    // helper to count occurrences
+    const countIn = (arr, ch) => arr.reduce((n, x) => n + (x === ch ? 1 : 0), 0);
+
+    for (let i = 0; i < HIDDEN.length; i++) {
+      const letter = HIDDEN[i];
       const box = document.createElement("div");
       box.textContent = letter;
       box.classList.add("letter-box");
-      if (collected.includes(letter)) {
+
+      // how many of this letter are required up to this position (inclusive)
+      const requiredUpToThis = countIn(HIDDEN.slice(0, i + 1), letter);
+
+      // how many of this letter have been collected overall
+      const collectedCount = countIn(collected, letter);
+
+      if (collectedCount >= requiredUpToThis) {
         box.classList.add("collected");
       }
       lettersContainer.appendChild(box);
-    });
+    }
   }
 
+  // initial render
   renderLetters();
 
   // Reset button
@@ -73,7 +88,7 @@ window.addEventListener("DOMContentLoaded", () => {
     window.location.href = CONFIG.BASE_PATH + "pages/scan/scan.html";
   };
 
-  // Listen for storage updates from Scan page (optional)
+  // If player scans in another tab/window, 'storage' event will update this page
   window.addEventListener("storage", () => {
     renderLetters();
   });
