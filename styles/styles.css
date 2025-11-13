@@ -17,12 +17,20 @@ input[type="text"] {
   border: 1px solid #ccc;
 }
 
-/* Buttons */
-button {
-  width: 100%;
+/* Button groups */
+.button-group {
+  display: flex;
+  justify-content: center; /* center buttons */
+  flex-wrap: wrap;          /* wrap on small screens */
+  gap: 10px;                /* space between buttons */
+  margin-bottom: 15px;
+}
+
+.button-group button {
+  width: auto;
+  min-width: 120px;
   padding: 12px;
   font-size: 1.2rem;
-  margin-bottom: 10px;
   border-radius: 8px;
   background-color: #007bff;
   color: white;
@@ -30,7 +38,7 @@ button {
   cursor: pointer;
 }
 
-button:hover {
+.button-group button:hover {
   background-color: #0056b3;
 }
 
@@ -59,7 +67,7 @@ p#msg, p#exportMsg {
 table {
   width: 100%;
   font-size: 1rem;
-  margin-top: 10px;
+  margin: 0 auto 20px auto;
   border-collapse: collapse;
 }
 
@@ -75,8 +83,9 @@ th, td {
     font-size: 1.4rem;
   }
 
-  input[type="text"], button {
+  input[type="text"], .button-group button {
     font-size: 1rem;
     padding: 10px;
+    width: 100%; /* stack buttons on small screens */
   }
 }
