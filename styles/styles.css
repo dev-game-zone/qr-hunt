@@ -89,3 +89,24 @@ th, td {
     width: 100%; /* stack buttons on small screens */
   }
 }
+
+/* Letters found / progress */
+#progress {
+  font-size: 1.4rem; /* larger text */
+  font-weight: bold;
+  margin-bottom: 25px;
+  color: #333;
+}
+
+#letters {
+  font-size: 2rem; /* extra large for visibility */
+  font-weight: bold;
+  color: #ff5722; /* standout color */
+  display: inline-block;
+  padding: 5px 12px;
+  border: 2px solid #ff5722;
+  border-radius: 8px;
+  background-color: #fff3e0; /* subtle highlight */
+  margin-left: 10px;
+}
+
