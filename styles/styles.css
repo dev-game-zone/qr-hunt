@@ -1,9 +1,41 @@
-/* Add this to styles.css */
-.letter-path {
-  position: absolute;
-  font-size: 2rem;
-  font-weight: bold;
-  color: #ff6b6b;
-  transition: transform 0.5s, opacity 0.5s;
-  pointer-events: none;
+main {
+  max-width: 500px;
+  margin: auto;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 12px;
+  font-size: 1.2rem;
+  margin-top: 5px;
+  margin-bottom: 15px;
+}
+
+button {
+  padding: 12px 20px;
+  font-size: 1.2rem;
+  margin: 5px;
+  border-radius: 8px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+#qrcode {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+table {
+  width: 100%;
+  font-size: 1rem;
+  margin-top: 10px;
 }
