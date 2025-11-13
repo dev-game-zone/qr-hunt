@@ -4,7 +4,6 @@
   <meta charset="utf-8">
   <title>Scavenger Hunt – Scan</title>
   <link rel="stylesheet" href="../../styles/styles.css">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body class="scan">
 <main>
@@ -16,28 +15,43 @@
 
   <p id="msg"></p>
 
-  <!-- Button group for Back and Retry -->
   <div class="button-group">
+    <button id="retry" style="display:none;">Retry Camera</button>
     <button id="back">Back to Game</button>
-    <!-- Retry Camera will be dynamically added here -->
   </div>
 </main>
 
+<!-- Scripts -->
 <script src="../../scripts/config.js"></script>
 <script src="../../scripts/app.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="../../scripts/qrcode.min.js"></script>
-
 <script>
 window.addEventListener("DOMContentLoaded", () => {
   const msg = document.getElementById("msg");
   const backBtn = document.getElementById("back");
-  const btnGroup = document.querySelector(".button-group"); // existing container
+  const retryBtn = document.getElementById("retry");
+  const readerContainer = document.getElementById("reader-container");
 
   // Access guard
   if (sessionStorage.getItem("access") !== "granted") {
     window.location.href = CONFIG.BASE_PATH + "index.html";
     return;
+  }
+
+  // Camera error visual
+  function showCameraError() {
+    readerContainer.innerHTML = `
+      <div style="text-align:center;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="80" height="80" style="margin-bottom:10px;">
+          <circle cx="32" cy="32" r="30" fill="none" stroke="#ff0000" stroke-width="4"/>
+          <path d="M16 48L48 16" stroke="#000" stroke-width="4"/>
+          <rect x="18" y="20" width="28" height="20" rx="3" fill="none" stroke="#000" stroke-width="3"/>
+          <circle cx="32" cy="30" r="6" fill="#000"/>
+        </svg>
+        <p style="font-weight:bold; color:#ff0000;">Camera access unavailable or disabled.</p>
+      </div>
+    `;
+    retryBtn.style.display = "inline-block";
   }
 
   // Initialize QR reader
@@ -46,80 +60,37 @@ window.addEventListener("DOMContentLoaded", () => {
     reader.start(
       { facingMode: "environment" },
       { fps: 10, qrbox: 250 },
-      (decodedText) => {
-        const mapping = CONFIG.QR_MAP || {
-          "QR001": "A",
-          "QR002": "B",
-          "QR003": "C"
-        };
+      async (decodedText) => {
+        const mapping = CONFIG.LETTER_MAP || {};
+        const letter = mapping[decodedText];
+        if (letter) {
+          store.add(letter);
+          msg.textContent = `✅ Found letter: ${letter}`;
+          msg.className = "success";
 
-        if (mapping[decodedText]) {
-          store.add(mapping[decodedText]);
-          msg.textContent = `✅ Found letter: ${mapping[decodedText]}`;
+          // short pause, then return to game
+          setTimeout(() => {
+            window.location.href = CONFIG.BASE_PATH + "pages/game/game.html";
+          }, 1500);
         } else {
           msg.textContent = "⚠️ Unknown QR code.";
+          msg.className = "warning";
         }
       },
-      (err) => {}
-    ).catch(e => showCameraError());
+      (err) => {
+        // ignore scanning errors (common during detection)
+      }
+    ).catch(e => {
+      msg.textContent = "";
+      showCameraError();
+    });
   } catch (e) {
+    msg.textContent = "";
     showCameraError();
   }
 
-  // Function to show camera-disabled UI
-  function showCameraError() {
-    msg.innerHTML = "";
-
-    // Inline SVG camera with slash
-    const svgNS = "http://www.w3.org/2000/svg";
-    const icon = document.createElementNS(svgNS, "svg");
-    icon.setAttribute("width", "80");
-    icon.setAttribute("height", "80");
-    icon.setAttribute("viewBox", "0 0 24 24");
-    icon.style.display = "block";
-    icon.style.margin = "0 auto 10px auto";
-
-    const camera = document.createElementNS(svgNS, "path");
-    camera.setAttribute("fill", "#000"); // camera body black
-    camera.setAttribute("d", "M21 6h-3.586l-1.707-1.707A.996.996 0 0015 4H9c-.265 0-.52.105-.707.293L6.586 6H3c-1.103 0-2 .897-2 2v12a2 2 0 002 2h18a2 2 0 002-2V8c0-1.103-.897-2-2-2zm-9 13c-2.757 0-5-2.243-5-5 0-1.184.42-2.27 1.121-3.122l6.001 6.001A4.978 4.978 0 0112 19zm0-10a5 5 0 014.899 4H7.101A4.978 4.978 0 0112 9z");
-    icon.appendChild(camera);
-
-    const slash = document.createElementNS(svgNS, "line");
-    slash.setAttribute("x1", "3");
-    slash.setAttribute("y1", "3");
-    slash.setAttribute("x2", "21");
-    slash.setAttribute("y2", "21");
-    slash.setAttribute("stroke", "#ff5722"); // slash red
-    slash.setAttribute("stroke-width", "2");
-    icon.appendChild(slash);
-
-    msg.appendChild(icon);
-
-    // Text
-    const text = document.createElement("div");
-    text.textContent = "⚠️ Camera access unavailable or disabled.";
-    text.style.fontWeight = "bold";
-    text.style.fontSize = "1.2rem";
-    text.style.textAlign = "center";
-    text.style.color = "#ff5722";
-    text.style.marginBottom = "10px";
-    msg.appendChild(text);
-
-    // Retry button appended to existing button group
-    const existingRetry = document.getElementById("retry-camera");
-    if (!existingRetry) {
-      const refresh = document.createElement("button");
-      refresh.id = "retry-camera";
-      refresh.textContent = "Retry Camera";
-      refresh.onclick = () => window.location.reload();
-      btnGroup.appendChild(refresh);
-    }
-  }
-
-  // Back button
-  backBtn.onclick = () => {
-    window.location.href = CONFIG.BASE_PATH + "pages/game/game.html";
-  };
+  retryBtn.onclick = () => window.location.reload();
+  backBtn.onclick = () => window.location.href = CONFIG.BASE_PATH + "pages/game/game.html";
 });
 </script>
 </body>
