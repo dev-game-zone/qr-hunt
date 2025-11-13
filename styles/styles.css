@@ -110,3 +110,15 @@ th, td {
   margin-left: 10px;
 }
 
+/* QR reader container */
+#reader-container {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+#reader {
+  width: 100%;
+  max-width: 300px;
+}
+
