@@ -8,9 +8,13 @@
 </head>
 <body class="game">
 <main>
-  <h2>Find the QR Codes to Reveal the Letters!</h2>
-  <p id="progress">Letters found: <span id="letters">none yet</span></p>
+  <h2>Find the QR codes to reveal the letters!</h2>
 
+  <!-- Visual letter progress -->
+  <p id="progress">Letters found:</p>
+  <div id="letters-container"></div>
+
+  <!-- Buttons -->
   <div class="button-group">
     <button id="scan">Scan QR Code</button>
     <button id="reset">Reset Progress</button>
@@ -19,29 +23,40 @@
   <p id="msg"></p>
 </main>
 
-<!-- Scripts -->
 <script src="../../scripts/config.js"></script>
 <script src="../../scripts/app.js"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="../../scripts/qrcode.min.js"></script>
 
 <script>
 window.addEventListener("DOMContentLoaded", () => {
-  const lettersEl = document.getElementById("letters");
+  const lettersContainer = document.getElementById("letters-container");
   const msg = document.getElementById("msg");
   const scanBtn = document.getElementById("scan");
   const resetBtn = document.getElementById("reset");
 
-  // Access check
+  // Access guard
   if (sessionStorage.getItem("access") !== "granted") {
     window.location.href = CONFIG.BASE_PATH + "index.html";
     return;
   }
 
-  // Display found letters
+  // Define all letters for this game
+  const ALL_LETTERS = ["A","B","C","D","E","F"];
+
+  // Render letters with grey/green boxes
   function renderLetters() {
-    const letters = store.letters;
-    lettersEl.textContent = letters.join(" ") || "none yet";
+    lettersContainer.innerHTML = "";
+    const collected = store.letters;
+
+    ALL_LETTERS.forEach(letter => {
+      const box = document.createElement("div");
+      box.textContent = letter;
+      box.classList.add("letter-box");
+      if (collected.includes(letter)) {
+        box.classList.add("collected");
+      }
+      lettersContainer.appendChild(box);
+    });
   }
 
   renderLetters();
@@ -57,6 +72,11 @@ window.addEventListener("DOMContentLoaded", () => {
   scanBtn.onclick = () => {
     window.location.href = CONFIG.BASE_PATH + "pages/scan/scan.html";
   };
+
+  // Listen for storage updates from Scan page (optional)
+  window.addEventListener("storage", () => {
+    renderLetters();
+  });
 });
 </script>
 </body>
