@@ -162,6 +162,32 @@ th, td {
   margin-left: 10px;
 }
 
+#letters-container {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.letter-box {
+  font-size: 1.5rem;
+  font-weight: bold;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background-color: #ccc; /* grey by default */
+  color: white;
+  transition: background-color 0.3s ease;
+}
+
+.letter-box.collected {
+  background-color: #28a745; /* green when scanned */
+}
+
 /* ================================
    QR Reader container (Scan page)
 ================================= */
