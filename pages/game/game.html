@@ -14,6 +14,9 @@
   <p id="progress">Letters found:</p>
   <div id="letters-container"></div>
 
+  <!-- Progress count + completion area -->
+  <div id="completion"></div>
+
   <!-- Buttons -->
   <div class="button-group">
     <button id="scan">Scan QR Code</button>
@@ -33,11 +36,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const msg = document.getElementById("msg");
   const scanBtn = document.getElementById("scan");
   const resetBtn = document.getElementById("reset");
-
-  // Create a completion section dynamically
-  const completion = document.createElement("div");
-  completion.id = "completion";
-  document.querySelector("main").appendChild(completion);
+  const completion = document.getElementById("completion");
 
   // Access guard
   if (sessionStorage.getItem("access") !== "granted") {
@@ -66,6 +65,7 @@ window.addEventListener("DOMContentLoaded", () => {
       if (collectedCount >= requiredUpToThis) {
         box.classList.add("collected");
       }
+
       lettersContainer.appendChild(box);
     });
 
@@ -76,15 +76,32 @@ window.addEventListener("DOMContentLoaded", () => {
     const requiredTotal = HIDDEN.length;
     const collectedCount = Math.min(collected.length, requiredTotal);
 
-    completion.innerHTML = `Progress: ${collectedCount} / ${requiredTotal}`;
+    // Default progress message
+    completion.innerHTML = `<p class="progress-text">Progress: <strong>${collectedCount}</strong> / ${requiredTotal}</p>`;
 
+    // All letters found
     if (collectedCount >= requiredTotal) {
       const code = await generateCompletionCode(HIDDEN.join(""));
+
       completion.innerHTML = `
-        🎉 <span class="success">All letters found!</span><br>
-        Your completion code:<br>
-        <span id="completion-code">${code}</span>
+        <p class="success">🎉 All letters found!</p>
+        <p class="completion-label">Your completion code:</p>
+        <span id="completion-code" class="copyable">${code}</span>
+        <p id="copy-msg" class="copy-msg"></p>
       `;
+
+      const codeEl = document.getElementById("completion-code");
+      const copyMsg = document.getElementById("copy-msg");
+
+      codeEl.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(code);
+          copyMsg.textContent = "✅ Copied!";
+          setTimeout(() => (copyMsg.textContent = ""), 1500);
+        } catch {
+          copyMsg.textContent = "⚠️ Could not copy.";
+        }
+      });
     }
   }
 
@@ -98,10 +115,7 @@ window.addEventListener("DOMContentLoaded", () => {
     window.location.href = CONFIG.BASE_PATH + "pages/scan/scan.html";
   };
 
-  window.addEventListener("storage", () => {
-    renderLetters();
-  });
-
+  window.addEventListener("storage", renderLetters);
   renderLetters();
 });
 </script>
