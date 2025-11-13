@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>Scan QR Marker</title>
-<link rel="stylesheet" href="styles/styles.css">
+<link rel="stylesheet" href="/styles/styles.css">
 <style>
 /* Letter trail styling */
 .letter-path {
@@ -39,14 +39,14 @@
   <p id="cameraMsg" style="color:red; font-weight:bold;"></p>
 
   <button id="refreshBtn" class="gameBtn" style="display:none;">Retry Scanner</button>
-  <button id="backBtn" class="gameBtn" onclick="window.location.href='pages/game/game.html'">Back to Game</button>
+  <button id="backBtn" class="gameBtn" onclick="window.location.href='/pages/game/game.html'">Back to Game</button>
 </main>
 
 <!-- Scripts in correct order -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="scripts/config.js"></script>
-<script src="scripts/app.js"></script>
-<script src="scripts/qrcode.min.js"></script>
+<script src="/scripts/config.js"></script>
+<script src="/scripts/app.js"></script>
+<script src="/scripts/qrcode.min.js"></script>
 
 <script>
 const resultBox = document.getElementById("result");
@@ -131,7 +131,7 @@ refreshBtn.onclick = () => {
 
 // Redirect if access not granted
 if (sessionStorage.getItem("access") !== "granted") {
-  window.location.href = "index.html";
+  window.location.href = "/index.html";
 } else {
   startScanner();
 }
