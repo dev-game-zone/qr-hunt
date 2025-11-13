@@ -1,12 +1,32 @@
-/* Container */
+/* ================================
+   Main container
+================================= */
 main {
   max-width: 500px;
   margin: auto;
   padding: 20px;
   font-family: Arial, sans-serif;
+  text-align: center; /* center all content */
 }
 
-/* Inputs */
+/* ================================
+   Headings
+================================= */
+h2, h3 {
+  font-size: 1.6rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 480px) {
+  h2, h3 {
+    font-size: 1.4rem;
+  }
+}
+
+/* ================================
+   Inputs
+================================= */
 input[type="text"] {
   width: 100%;
   padding: 12px;
@@ -17,12 +37,21 @@ input[type="text"] {
   border: 1px solid #ccc;
 }
 
-/* Button groups */
+@media (max-width: 480px) {
+  input[type="text"] {
+    font-size: 1rem;
+    padding: 10px;
+  }
+}
+
+/* ================================
+   Buttons
+================================= */
 .button-group {
   display: flex;
   justify-content: center; /* center buttons */
   flex-wrap: wrap;          /* wrap on small screens */
-  gap: 10px;                /* space between buttons */
+  gap: 10px;                /* spacing between buttons */
   margin-bottom: 15px;
 }
 
@@ -32,38 +61,72 @@ input[type="text"] {
   padding: 12px;
   font-size: 1.2rem;
   border-radius: 8px;
-  background-color: #007bff;
-  color: white;
   border: none;
   cursor: pointer;
+  color: white;
+  transition: background 0.3s ease;
 }
 
-.button-group button:hover {
+/* Page-specific button colors */
+.generator .button-group button {
+  background-color: #007bff;
+}
+.generator .button-group button:hover {
   background-color: #0056b3;
 }
 
-/* Headings */
-h2, h3 {
-  font-size: 1.6rem;
-  font-weight: bold;
-  text-align: center;
+.game .button-group button {
+  background-color: #28a745;
+}
+.game .button-group button:hover {
+  background-color: #1e7e34;
 }
 
+.scan .button-group button {
+  background-color: #17a2b8;
+}
+.scan .button-group button:hover {
+  background-color: #117a8b;
+}
+
+@media (max-width: 480px) {
+  .button-group button {
+    width: 100%;
+    font-size: 1rem;
+    padding: 10px;
+  }
+}
+
+/* ================================
+   Messages
+================================= */
 p#msg, p#exportMsg {
   font-size: 1.2rem;
   font-weight: bold;
-  text-align: center;
   margin-top: 10px;
+  text-align: center;
 }
 
-/* QR code container */
+/* Success and warning colors (optional) */
+p#msg.success {
+  color: #28a745;
+}
+p#msg.warning {
+  color: #ff5722;
+}
+
+/* ================================
+   QR Code container
+================================= */
 #qrcode {
   display: flex;
   justify-content: center;
   margin: 20px 0;
 }
 
-/* Table */
+/* ================================
+   Table
+================================= */
 table {
   width: 100%;
   font-size: 1rem;
@@ -77,40 +140,31 @@ th, td {
   text-align: center;
 }
 
-/* Responsive tweaks */
-@media (max-width: 480px) {
-  h2, h3 {
-    font-size: 1.4rem;
-  }
-
-  input[type="text"], .button-group button {
-    font-size: 1rem;
-    padding: 10px;
-    width: 100%; /* stack buttons on small screens */
-  }
-}
-
-/* Letters found / progress */
+/* ================================
+   Letters found / progress
+================================= */
 #progress {
-  font-size: 1.4rem; /* larger text */
+  font-size: 1.4rem; 
   font-weight: bold;
   margin-bottom: 25px;
   color: #333;
 }
 
 #letters {
-  font-size: 2rem; /* extra large for visibility */
+  font-size: 2rem; 
   font-weight: bold;
-  color: #ff5722; /* standout color */
+  color: #ff5722; 
   display: inline-block;
   padding: 5px 12px;
   border: 2px solid #ff5722;
   border-radius: 8px;
-  background-color: #fff3e0; /* subtle highlight */
+  background-color: #fff3e0;
   margin-left: 10px;
 }
 
-/* QR reader container */
+/* ================================
+   QR Reader container (Scan page)
+================================= */
 #reader-container {
   display: flex;
   justify-content: center;
@@ -122,3 +176,8 @@ th, td {
   max-width: 300px;
 }
 
+@media (max-width: 480px) {
+  #reader {
+    max-width: 90%;
+  }
+}
