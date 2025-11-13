@@ -69,14 +69,14 @@ window.addEventListener("DOMContentLoaded", () => {
       icon.setAttribute("viewBox", "0 0 24 24");
       icon.style.display = "block";
       icon.style.margin = "0 auto 10px auto";
-
-      // Camera shape
+      
+      // Camera shape (black)
       const camera = document.createElementNS(svgNS, "path");
-      camera.setAttribute("fill", "#ff5722");
+      camera.setAttribute("fill", "#000"); // camera is now black
       camera.setAttribute("d", "M21 6h-3.586l-1.707-1.707A.996.996 0 0015 4H9c-.265 0-.52.105-.707.293L6.586 6H3c-1.103 0-2 .897-2 2v12a2 2 0 002 2h18a2 2 0 002-2V8c0-1.103-.897-2-2-2zm-9 13c-2.757 0-5-2.243-5-5 0-1.184.42-2.27 1.121-3.122l6.001 6.001A4.978 4.978 0 0112 19zm0-10a5 5 0 014.899 4H7.101A4.978 4.978 0 0112 9z");
       icon.appendChild(camera);
-
-      // Slash line
+      
+      // Slash line (red)
       const slash = document.createElementNS(svgNS, "line");
       slash.setAttribute("x1", "3");
       slash.setAttribute("y1", "3");
@@ -85,7 +85,7 @@ window.addEventListener("DOMContentLoaded", () => {
       slash.setAttribute("stroke", "#ff5722");
       slash.setAttribute("stroke-width", "2");
       icon.appendChild(slash);
-
+      
       msg.appendChild(icon);
 
       // Message text
