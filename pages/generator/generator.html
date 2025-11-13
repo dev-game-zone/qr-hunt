@@ -1,78 +1,145 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>QR Code Generator</title>
-<link rel="stylesheet" href="styles/styles.css">
-<script src="scripts/config.js"></script>
-<script src="scripts/qrcode.min.js"></script>
-<style>
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:12px}
-  .qrCard{text-align:center;padding:8px;border:1px dashed #ccc;border-radius:6px;background:#fff}
-  img.qr{width:140px;height:140px;margin:6px auto;display:block}
-  .small{font-size:.9rem;color:#333}
-  button{margin-top:6px}
-</style>
+  <meta charset="utf-8">
+  <title>Scavenger Hunt – QR Generator</title>
+  <link rel="stylesheet" href="../../styles/styles.css">
 </head>
 <body>
 <main>
   <h2>QR Code Generator</h2>
-  <p class="small">Generates printable QR codes for each ID in <code>config.js</code>.</p>
-  <button id="genBtn">Generate QR Codes</button>
-  <button onclick="window.print()">Print Gallery</button>
-  <div id="gallery" class="grid"></div>
+  <p>
+    Generate QR codes mapped to letters for your scavenger hunt.
+    This tool runs entirely in your browser – nothing is uploaded or stored.
+  </p>
+
+  <label>
+    Enter Code ID (e.g. QR001):
+    <input id="qrId" type="text" placeholder="QR001">
+  </label>
+  <br><br>
+
+  <label>
+    Letter or Word:
+    <input id="qrLetter" type="text" placeholder="A">
+  </label>
+  <br><br>
+
+  <button id="generate">Generate QR</button>
+  <button id="download">Download QR</button>
+
+  <div id="qrcode" style="margin-top:20px;"></div>
+  <p id="msg"></p>
+
+  <hr>
+
+  <h3>Current Mappings (Session Only)</h3>
+  <table id="mapTable" border="1" cellpadding="6" style="margin:auto;">
+    <thead>
+      <tr><th>QR Code</th><th>Letter</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <br>
+  <button id="export">Export Mapping</button>
+  <p id="exportMsg"></p>
+
+  <br><br>
+  <button id="back">Back to Access Page</button>
 </main>
 
+<!-- Scripts -->
+<script src="../../scripts/config.js"></script>
+<script src="../../scripts/app.js"></script>
+<script src="../../scripts/qrcode.min.js"></script>
+
 <script>
-const gallery = document.getElementById('gallery');
-document.getElementById('genBtn').onclick = () => {
-  gallery.innerHTML = '';
-  const ids = Object.keys(CONFIG.LETTER_MAP);
-  ids.forEach(id => {
-    const container = document.createElement('div');
-    container.className = 'qrCard';
-    
-    const title = document.createElement('div');
-    title.textContent = id;
-    title.className = 'small';
-    container.appendChild(title);
-    
-    const letter = CONFIG.LETTER_MAP[id];
-    const note = document.createElement('div');
-    note.textContent = `Letter: ${letter}`;
-    note.className = 'small';
-    container.appendChild(note);
-    
-    const qrDiv = document.createElement('div');
-    container.appendChild(qrDiv);
-    
-    const qr = new QRCode(qrDiv, {
-      text: `CODE=${id}`,
-      width: 140,
-      height: 140,
-      colorDark : "#000000",
-      colorLight : "#ffffff",
-      correctLevel : QRCode.CorrectLevel.M
+window.addEventListener("DOMContentLoaded", () => {
+  const qrId = document.getElementById("qrId");
+  const qrLetter = document.getElementById("qrLetter");
+  const generateBtn = document.getElementById("generate");
+  const downloadBtn = document.getElementById("download");
+  const qrcodeDiv = document.getElementById("qrcode");
+  const msg = document.getElementById("msg");
+  const mapTableBody = document.querySelector("#mapTable tbody");
+  const exportBtn = document.getElementById("export");
+  const exportMsg = document.getElementById("exportMsg");
+  const backBtn = document.getElementById("back");
+
+  let currentDataUrl = null;
+  let qrMap = {};
+
+  // Generate a QR code
+  generateBtn.onclick = () => {
+    const id = qrId.value.trim();
+    const letter = qrLetter.value.trim();
+    if (!id || !letter) {
+      msg.textContent = "⚠️ Please enter both a code ID and letter.";
+      return;
+    }
+
+    qrcodeDiv.innerHTML = "";
+    const qr = new QRCode(qrcodeDiv, {
+      text: id,
+      width: 200,
+      height: 200,
     });
 
-    const dl = document.createElement('a');
-    dl.textContent = 'Download PNG';
-    dl.href = '#';
-    dl.className = 'small';
-    dl.style.display = 'block';
-    container.appendChild(dl);
+    msg.textContent = `✅ QR code created for ${id} → ${letter}`;
+    qrMap[id] = letter;
+    renderTable();
 
+    // Capture the generated canvas as a data URL for download
     setTimeout(() => {
-      const img = qrDiv.querySelector('img');
-      if(img){
-        dl.href = img.src;
-        dl.download = id + '.png';
-      }
-    }, 100);
+      const canvas = qrcodeDiv.querySelector("canvas");
+      if (canvas) currentDataUrl = canvas.toDataURL("image/png");
+    }, 500);
+  };
 
-    gallery.appendChild(container);
-  });
-};
+  // Download the generated QR code
+  downloadBtn.onclick = () => {
+    if (!currentDataUrl) {
+      msg.textContent = "⚠️ Generate a QR code first.";
+      return;
+    }
+    const id = qrId.value.trim() || "qr_code";
+    const link = document.createElement("a");
+    link.href = currentDataUrl;
+    link.download = id + ".png";
+    link.click();
+  };
+
+  // Render current QR mapping table
+  function renderTable() {
+    mapTableBody.innerHTML = "";
+    Object.entries(qrMap).forEach(([id, letter]) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `<td>${id}</td><td>${letter}</td>`;
+      mapTableBody.appendChild(row);
+    });
+  }
+
+  // Export the map to JSON
+  exportBtn.onclick = () => {
+    if (Object.keys(qrMap).length === 0) {
+      exportMsg.textContent = "⚠️ No mappings to export.";
+      return;
+    }
+
+    const blob = new Blob([JSON.stringify(qrMap, null, 2)], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "qr-map.json";
+    link.click();
+    exportMsg.textContent = "✅ Mapping exported as qr-map.json";
+  };
+
+  // Go back to entry page
+  backBtn.onclick = () => {
+    window.location.href = CONFIG.BASE_PATH + "index.html";
+  };
+});
 </script>
 </body>
 </html>
