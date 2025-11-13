@@ -138,16 +138,25 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 
   function updateProgress() {
-    const found = store.letters;
+    const found = store.letters.slice(); // copy to handle duplicates
     const boxes = container.querySelectorAll(".letter-box");
+    let countFound = 0;
+
     boxes.forEach((box, i) => {
-      if (found.includes(phrase[i])) box.classList.add("collected");
-      else box.classList.remove("collected");
+      const letter = phrase[i];
+      if (found.includes(letter)) {
+        box.classList.add("collected");
+        // remove first occurrence to handle duplicates
+        found.splice(found.indexOf(letter), 1);
+        countFound++;
+      } else {
+        box.classList.remove("collected");
+      }
     });
 
-    progressText.textContent = `Found ${found.length} of ${phrase.length}`;
+    progressText.textContent = `Found ${countFound} of ${phrase.length}`;
 
-    if (found.length === phrase.length) {
+    if (countFound === phrase.length) {
       generateCompletionCode(CONFIG.HIDDEN_PHRASE).then(code => {
         completionCodeEl.textContent = code;
         triggerConfetti();
