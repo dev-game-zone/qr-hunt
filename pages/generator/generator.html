@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <title>Scavenger Hunt – QR Generator</title>
   <link rel="stylesheet" href="../../styles/styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
 <main>
@@ -17,40 +18,35 @@
     Enter Code ID (e.g. QR001):
     <input id="qrId" type="text" placeholder="QR001">
   </label>
-  <br><br>
 
   <label>
     Letter or Word:
     <input id="qrLetter" type="text" placeholder="A">
   </label>
-  <br><br>
 
   <button id="generate">Generate QR</button>
   <button id="download">Download QR</button>
 
-  <div id="qrcode" style="margin-top:20px;"></div>
+  <div id="qrcode"></div>
   <p id="msg"></p>
 
   <hr>
 
   <h3>Current Mappings (Session Only)</h3>
-  <table id="mapTable" border="1" cellpadding="6" style="margin:auto;">
+  <table id="mapTable">
     <thead>
       <tr><th>QR Code</th><th>Letter</th></tr>
     </thead>
     <tbody></tbody>
   </table>
 
-  <br>
   <button id="export">Export Mapping</button>
   <p id="exportMsg"></p>
 
-  <br><br>
   <button id="back">Back to Access Page</button>
 </main>
 
 <!-- Scripts -->
-<!-- QRCode library via CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="../../scripts/config.js"></script>
 <script src="../../scripts/app.js"></script>
@@ -81,24 +77,27 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     qrcodeDiv.innerHTML = "";
+
+    // QR size scales to screen width
+    const qrSize = Math.min(window.innerWidth * 0.8, 300);
+
     const qr = new QRCode(qrcodeDiv, {
       text: id,
-      width: 200,
-      height: 200,
+      width: qrSize,
+      height: qrSize,
     });
 
     msg.textContent = `✅ QR code created for ${id} → ${letter}`;
     qrMap[id] = letter;
     renderTable();
 
-    // Capture the generated canvas as a data URL for download
     setTimeout(() => {
       const canvas = qrcodeDiv.querySelector("canvas");
       if (canvas) currentDataUrl = canvas.toDataURL("image/png");
     }, 500);
   };
 
-  // Download the generated QR code
+  // Download QR
   downloadBtn.onclick = () => {
     if (!currentDataUrl) {
       msg.textContent = "⚠️ Generate a QR code first.";
@@ -111,7 +110,6 @@ window.addEventListener("DOMContentLoaded", () => {
     link.click();
   };
 
-  // Render current QR mapping table
   function renderTable() {
     mapTableBody.innerHTML = "";
     Object.entries(qrMap).forEach(([id, letter]) => {
@@ -121,13 +119,11 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Export the map to JSON
   exportBtn.onclick = () => {
     if (Object.keys(qrMap).length === 0) {
       exportMsg.textContent = "⚠️ No mappings to export.";
       return;
     }
-
     const blob = new Blob([JSON.stringify(qrMap, null, 2)], { type: "application/json" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -136,7 +132,6 @@ window.addEventListener("DOMContentLoaded", () => {
     exportMsg.textContent = "✅ Mapping exported as qr-map.json";
   };
 
-  // Go back to entry page
   backBtn.onclick = () => {
     window.location.href = CONFIG.BASE_PATH + "index.html";
   };
