@@ -2,8 +2,42 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- ✅ fixes mobile scaling -->
   <title>Scavenger Hunt – Scan</title>
   <link rel="stylesheet" href="../../styles/styles.css">
+  <style>
+    /* Prevent reader overflow on mobile */
+    #reader-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 20px auto;
+      max-width: 90vw; /* ✅ limits to viewport width */
+    }
+
+    #reader {
+      width: 100%;
+      max-width: 320px; /* ✅ consistent with design */
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    main {
+      max-width: 500px; /* ✅ same as other pages */
+      margin: 0 auto;
+      padding: 16px;
+      text-align: center;
+    }
+
+    @media (max-width: 480px) {
+      h2 {
+        font-size: 1.4rem;
+      }
+      #reader {
+        max-width: 280px;
+      }
+    }
+  </style>
 </head>
 <body class="scan">
 <main>
@@ -78,7 +112,7 @@ window.addEventListener("DOMContentLoaded", () => {
         }
       },
       (err) => {
-        // ignore scanning errors (common during detection)
+        // ignore scanning errors
       }
     ).catch(e => {
       msg.textContent = "";
