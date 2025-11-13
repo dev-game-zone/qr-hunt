@@ -266,3 +266,12 @@ th, td {
   pointer-events: none; /* allow clicking through */
   z-index: 9999;
 }
+
+#completion-code {
+  opacity: 0;
+  transition: opacity 0.8s ease-in-out;
+}
+
+#completion-code.visible {
+  opacity: 1;
+}
