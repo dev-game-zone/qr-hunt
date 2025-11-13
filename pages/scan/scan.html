@@ -4,13 +4,21 @@
   <meta charset="utf-8">
   <title>Scavenger Hunt – Scan</title>
   <link rel="stylesheet" href="../../styles/styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
 <main>
   <h2>Scan a QR Code</h2>
-  <div id="reader" style="width:300px; margin:auto;"></div>
+
+  <div id="reader-container">
+    <div id="reader"></div>
+  </div>
+
   <p id="msg"></p>
-  <button id="back">Back to Game</button>
+
+  <div class="button-group">
+    <button id="back">Back to Game</button>
+  </div>
 </main>
 
 <!-- Scripts -->
@@ -37,7 +45,6 @@ window.addEventListener("DOMContentLoaded", () => {
       { facingMode: "environment" },
       { fps: 10, qrbox: 250 },
       (decodedText) => {
-        // Example QR mapping logic
         const mapping = CONFIG.QR_MAP || {
           "QR001": "A",
           "QR002": "B",
