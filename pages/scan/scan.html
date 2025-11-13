@@ -39,7 +39,7 @@
   <p id="cameraMsg" style="color:red; font-weight:bold;"></p>
 
   <button id="refreshBtn" class="gameBtn" style="display:none;">Retry Scanner</button>
-  <button id="backBtn" class="gameBtn" onclick="window.location.href='/pages/game/game.html'">Back to Game</button>
+  <button id="backBtn" class="gameBtn" onclick="window.location.href='pages/game/game.html'">Back to Game</button>
 </main>
 
 <!-- Scripts in correct order -->
@@ -131,7 +131,7 @@ refreshBtn.onclick = () => {
 
 // Redirect if access not granted
 if (sessionStorage.getItem("access") !== "granted") {
-  window.location.href = "/index.html";
+  window.location.href = "index.html";
 } else {
   startScanner();
 }
