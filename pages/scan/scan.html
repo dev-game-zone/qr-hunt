@@ -21,7 +21,6 @@
   </div>
 </main>
 
-<!-- Scripts -->
 <script src="../../scripts/config.js"></script>
 <script src="../../scripts/app.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -60,9 +59,46 @@ window.addEventListener("DOMContentLoaded", () => {
       },
       (err) => {}
     ).catch(e => {
-      msg.textContent = "⚠️ Camera error: " + e.message;
+      msg.innerHTML = "";
 
-      // Add a Retry Camera button inside a button-group
+      // Inline SVG camera with no-entry slash
+      const svgNS = "http://www.w3.org/2000/svg";
+      const icon = document.createElementNS(svgNS, "svg");
+      icon.setAttribute("width", "80");
+      icon.setAttribute("height", "80");
+      icon.setAttribute("viewBox", "0 0 24 24");
+      icon.style.display = "block";
+      icon.style.margin = "0 auto 10px auto";
+
+      // Camera shape
+      const camera = document.createElementNS(svgNS, "path");
+      camera.setAttribute("fill", "#ff5722");
+      camera.setAttribute("d", "M21 6h-3.586l-1.707-1.707A.996.996 0 0015 4H9c-.265 0-.52.105-.707.293L6.586 6H3c-1.103 0-2 .897-2 2v12a2 2 0 002 2h18a2 2 0 002-2V8c0-1.103-.897-2-2-2zm-9 13c-2.757 0-5-2.243-5-5 0-1.184.42-2.27 1.121-3.122l6.001 6.001A4.978 4.978 0 0112 19zm0-10a5 5 0 014.899 4H7.101A4.978 4.978 0 0112 9z");
+      icon.appendChild(camera);
+
+      // Slash line
+      const slash = document.createElementNS(svgNS, "line");
+      slash.setAttribute("x1", "3");
+      slash.setAttribute("y1", "3");
+      slash.setAttribute("x2", "21");
+      slash.setAttribute("y2", "21");
+      slash.setAttribute("stroke", "#ff5722");
+      slash.setAttribute("stroke-width", "2");
+      icon.appendChild(slash);
+
+      msg.appendChild(icon);
+
+      // Message text
+      const text = document.createElement("div");
+      text.textContent = "⚠️ Camera access unavailable or disabled.";
+      text.style.fontWeight = "bold";
+      text.style.fontSize = "1.2rem";
+      text.style.textAlign = "center";
+      text.style.color = "#ff5722";
+      text.style.marginBottom = "10px";
+      msg.appendChild(text);
+
+      // Retry Camera button
       const btnGroup = document.createElement("div");
       btnGroup.classList.add("button-group");
 
@@ -71,13 +107,54 @@ window.addEventListener("DOMContentLoaded", () => {
       refresh.onclick = () => window.location.reload();
 
       btnGroup.appendChild(refresh);
-
-      // Add spacing before button
-      msg.appendChild(document.createElement("br"));
       msg.appendChild(btnGroup);
     });
   } catch (e) {
-    msg.textContent = "⚠️ Unable to start camera. " + e.message;
+    msg.innerHTML = "";
+
+    // Show the same camera-disabled UI for initialization errors
+    const svgNS = "http://www.w3.org/2000/svg";
+    const icon = document.createElementNS(svgNS, "svg");
+    icon.setAttribute("width", "80");
+    icon.setAttribute("height", "80");
+    icon.setAttribute("viewBox", "0 0 24 24");
+    icon.style.display = "block";
+    icon.style.margin = "0 auto 10px auto";
+
+    const camera = document.createElementNS(svgNS, "path");
+    camera.setAttribute("fill", "#ff5722");
+    camera.setAttribute("d", "M21 6h-3.586l-1.707-1.707A.996.996 0 0015 4H9c-.265 0-.52.105-.707.293L6.586 6H3c-1.103 0-2 .897-2 2v12a2 2 0 002 2h18a2 2 0 002-2V8c0-1.103-.897-2-2-2zm-9 13c-2.757 0-5-2.243-5-5 0-1.184.42-2.27 1.121-3.122l6.001 6.001A4.978 4.978 0 0112 19zm0-10a5 5 0 014.899 4H7.101A4.978 4.978 0 0112 9z");
+    icon.appendChild(camera);
+
+    const slash = document.createElementNS(svgNS, "line");
+    slash.setAttribute("x1", "3");
+    slash.setAttribute("y1", "3");
+    slash.setAttribute("x2", "21");
+    slash.setAttribute("y2", "21");
+    slash.setAttribute("stroke", "#ff5722");
+    slash.setAttribute("stroke-width", "2");
+    icon.appendChild(slash);
+
+    msg.appendChild(icon);
+
+    const text = document.createElement("div");
+    text.textContent = "⚠️ Camera access unavailable or disabled.";
+    text.style.fontWeight = "bold";
+    text.style.fontSize = "1.2rem";
+    text.style.textAlign = "center";
+    text.style.color = "#ff5722";
+    text.style.marginBottom = "10px";
+    msg.appendChild(text);
+
+    const btnGroup = document.createElement("div");
+    btnGroup.classList.add("button-group");
+
+    const refresh = document.createElement("button");
+    refresh.textContent = "Retry Camera";
+    refresh.onclick = () => window.location.reload();
+
+    btnGroup.appendChild(refresh);
+    msg.appendChild(btnGroup);
   }
 
   // Back button
