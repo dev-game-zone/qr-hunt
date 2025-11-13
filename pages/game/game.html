@@ -4,17 +4,22 @@
   <meta charset="utf-8">
   <title>Scavenger Hunt – Game</title>
   <link rel="stylesheet" href="../../styles/styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
 <main>
-  <h2>Find the QR codes to reveal the letters!</h2>
-  <p id="progress">Letters found: <span id="letters"></span></p>
-  <button id="scan">Scan QR Code</button>
-  <button id="reset">Reset Progress</button>
+  <h2>Find the QR Codes to Reveal the Letters!</h2>
+  <p id="progress">Letters found: <span id="letters">none yet</span></p>
+
+  <div class="button-group">
+    <button id="scan">Scan QR Code</button>
+    <button id="reset">Reset Progress</button>
+  </div>
+
   <p id="msg"></p>
 </main>
 
-<!-- Script loading -->
+<!-- Scripts -->
 <script src="../../scripts/config.js"></script>
 <script src="../../scripts/app.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
