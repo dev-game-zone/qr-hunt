@@ -3,16 +3,7 @@ const CONFIG = {
   SECRET_SALT: "YOUR_SECRET_SALT",
   CODE_LENGTH: 8,
   LETTER_MAP: {
-    "QR001": "A",
-    "QR002": "R",
-    "QR003": "T",
-    "QR004": "E",
-    "QR005": "M",
-    "QR006": "I",
-    "QR007": "S",
-    "QR008": "T",
-    "QR009": "I",
-    "QR010": "C"
+    "QR001": "A"
   },
-  HIDDEN_PHRASE: "ARTEMISTIC"
+  HIDDEN_PHRASE: "A"
 };
