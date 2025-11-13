@@ -2,27 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- ✅ ensures correct mobile scaling -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scavenger Hunt – Game</title>
   <link rel="stylesheet" href="../../styles/styles.css">
   <style>
     main {
-      max-width: 500px;       /* ✅ consistent layout */
+      max-width: 500px;
       margin: 0 auto;
       padding: 20px;
       font-family: Arial, sans-serif;
       text-align: center;
-      overflow-x: hidden;     /* ✅ prevent sideways scrolling */
+      overflow-x: hidden;
     }
-
     body {
       margin: 0;
       padding: 0;
       background-color: #fff;
       overflow-x: hidden;
     }
-
-    /* Smooth confetti containment */
     #confetti-canvas {
       position: fixed;
       top: 0;
@@ -32,19 +29,12 @@
       pointer-events: none;
       z-index: 9999;
     }
-
-    @media (max-width: 480px) {
-      h2 {
-        font-size: 1.4rem;
-      }
-    }
   </style>
 </head>
 <body class="game">
 <main>
   <h2>Collect the Letters!</h2>
 
-  <!-- Progress display -->
   <div id="letters-container"></div>
   <div id="completion">
     <p class="progress-text" id="progress-text"></p>
@@ -59,10 +49,8 @@
   </div>
 </main>
 
-<!-- Confetti canvas -->
 <canvas id="confetti-canvas"></canvas>
 
-<!-- Scripts -->
 <script src="../../scripts/config.js"></script>
 <script src="../../scripts/app.js"></script>
 <script>
@@ -72,13 +60,11 @@ window.addEventListener("DOMContentLoaded", async () => {
   const completionCodeEl = document.getElementById("completion-code");
   const copyMsg = document.getElementById("copy-msg");
 
-  // Ensure access
   if (sessionStorage.getItem("access") !== "granted") {
     window.location.href = CONFIG.BASE_PATH + "index.html";
     return;
   }
 
-  // Build letter boxes
   const phrase = CONFIG.HIDDEN_PHRASE.split("");
   container.innerHTML = "";
   phrase.forEach(letter => {
@@ -88,50 +74,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     container.appendChild(box);
   });
 
-  // Update UI
-  function updateProgress() {
-    const found = store.letters;
-    const boxes = container.querySelectorAll(".letter-box");
-    boxes.forEach((box, i) => {
-      if (found.includes(phrase[i])) box.classList.add("collected");
-      else box.classList.remove("collected");
-    });
+  let confettiAnimationId;
 
-    progressText.textContent = `Found ${found.length} of ${phrase.length}`;
-
-    // If complete, show completion code and celebrate
-    if (found.length === phrase.length) {
-      generateCompletionCode(CONFIG.HIDDEN_PHRASE).then(code => {
-        completionCodeEl.textContent = code;
-        triggerConfetti();
-      });
-    } else {
-      completionCodeEl.textContent = "----";
-    }
-  }
-
-  // Copy completion code
-  completionCodeEl.addEventListener("click", () => {
-    const code = completionCodeEl.textContent;
-    if (code && code !== "----") {
-      navigator.clipboard.writeText(code);
-      copyMsg.textContent = "✅ Copied!";
-      setTimeout(() => (copyMsg.textContent = ""), 1500);
-    }
-  });
-
-  // Buttons
-  document.getElementById("scan").addEventListener("click", () => {
-    window.location.href = CONFIG.BASE_PATH + "pages/scan/scan.html";
-  });
-  document.getElementById("reset").addEventListener("click", () => {
-    if (confirm("Reset your progress?")) {
-      store.reset();
-      updateProgress();
-    }
-  });
-
-  // Confetti celebration 🎉
   function triggerConfetti() {
     const canvas = document.getElementById("confetti-canvas");
     const ctx = canvas.getContext("2d");
@@ -165,7 +109,7 @@ window.addEventListener("DOMContentLoaded", async () => {
         ctx.fill();
       });
       updateConfetti();
-      requestAnimationFrame(drawConfetti);
+      confettiAnimationId = requestAnimationFrame(drawConfetti);
     }
 
     function updateConfetti() {
@@ -181,13 +125,59 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     drawConfetti();
 
-    // stop after 5 seconds
-    setTimeout(() => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }, 5000);
+    setTimeout(() => stopConfetti(), 5000);
   }
 
-  // Initial draw
+  function stopConfetti() {
+    if (confettiAnimationId) {
+      cancelAnimationFrame(confettiAnimationId);
+      const canvas = document.getElementById("confetti-canvas");
+      canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+      confettiAnimationId = null;
+    }
+  }
+
+  function updateProgress() {
+    const found = store.letters;
+    const boxes = container.querySelectorAll(".letter-box");
+    boxes.forEach((box, i) => {
+      if (found.includes(phrase[i])) box.classList.add("collected");
+      else box.classList.remove("collected");
+    });
+
+    progressText.textContent = `Found ${found.length} of ${phrase.length}`;
+
+    if (found.length === phrase.length) {
+      generateCompletionCode(CONFIG.HIDDEN_PHRASE).then(code => {
+        completionCodeEl.textContent = code;
+        triggerConfetti();
+      });
+    } else {
+      completionCodeEl.textContent = "----";
+    }
+  }
+
+  completionCodeEl.addEventListener("click", () => {
+    const code = completionCodeEl.textContent;
+    if (code && code !== "----") {
+      navigator.clipboard.writeText(code);
+      copyMsg.textContent = "✅ Copied!";
+      setTimeout(() => (copyMsg.textContent = ""), 1500);
+    }
+  });
+
+  document.getElementById("scan").addEventListener("click", () => {
+    window.location.href = CONFIG.BASE_PATH + "pages/scan/scan.html";
+  });
+
+  document.getElementById("reset").addEventListener("click", () => {
+    if (confirm("Reset your progress?")) {
+      store.reset();
+      updateProgress();
+      stopConfetti(); // stop confetti immediately
+    }
+  });
+
   updateProgress();
 });
 </script>
