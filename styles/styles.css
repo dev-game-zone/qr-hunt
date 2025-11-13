@@ -1,3 +1,4 @@
+/* Container */
 main {
   max-width: 500px;
   margin: auto;
@@ -5,18 +6,23 @@ main {
   font-family: Arial, sans-serif;
 }
 
+/* Inputs */
 input[type="text"] {
   width: 100%;
   padding: 12px;
   font-size: 1.2rem;
   margin-top: 5px;
   margin-bottom: 15px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
 }
 
+/* Buttons */
 button {
-  padding: 12px 20px;
+  width: 100%;
+  padding: 12px;
   font-size: 1.2rem;
-  margin: 5px;
+  margin-bottom: 10px;
   border-radius: 8px;
   background-color: #007bff;
   color: white;
@@ -28,14 +34,49 @@ button:hover {
   background-color: #0056b3;
 }
 
+/* Headings */
+h2, h3 {
+  font-size: 1.6rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+p#msg, p#exportMsg {
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 10px;
+}
+
+/* QR code container */
 #qrcode {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
+  margin: 20px 0;
 }
 
+/* Table */
 table {
   width: 100%;
   font-size: 1rem;
   margin-top: 10px;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 8px;
+  border: 1px solid #ccc;
+  text-align: center;
+}
+
+/* Responsive tweaks */
+@media (max-width: 480px) {
+  h2, h3 {
+    font-size: 1.4rem;
+  }
+
+  input[type="text"], button {
+    font-size: 1rem;
+    padding: 10px;
+  }
 }
