@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>Scavenger Hunt – Access</title>
-  <link rel="stylesheet" href="/styles/styles.css">
+  <link rel="stylesheet" href="styles/styles.css">
 </head>
 <body>
 <main>
@@ -41,7 +41,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // Redirect if already accessed
   if (sessionStorage.getItem("access") === "granted") {
-    window.location.href = "/pages/game/game.html";
+    window.location.href = "pages/game/game.html";
     return;
   }
 
@@ -51,7 +51,7 @@ window.addEventListener("DOMContentLoaded", () => {
       const ok = await verifyAccessCode(code);
       if (ok) {
         sessionStorage.setItem("access", "granted");
-        window.location.href = "/pages/game/game.html";
+        window.location.href = "pages/game/game.html";
       } else {
         msg.textContent = "❌ Incorrect code. Try again.";
       }
