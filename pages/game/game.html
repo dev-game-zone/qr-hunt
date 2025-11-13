@@ -1,80 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Scavenger Hunt Game</title>
-<link rel="stylesheet" href="/styles/styles.css">
-<script src="/scripts/config.js"></script>
-<script src="/scripts/app.js"></script>
+  <meta charset="utf-8">
+  <title>Scavenger Hunt – Game</title>
+  <link rel="stylesheet" href="../../styles/styles.css">
 </head>
 <body>
 <main>
-  <h2>Scavenger Hunt</h2>
-  <div id="maskedWord">_ _ _ _ _ _ _ _ _ _</div>
-  <div id="letters">No letters found yet.</div>
-  <button onclick="window.location.href='/pages/scan/scan.html'">Scan QR Code</button>
-  <input id="guess" placeholder="Enter final word/phrase">
-  <button id="submit">Check</button>
-  <p id="status"></p>
-  <p id="codeOut" class="code"></p>
-  <button id="reset">Reset progress</button>
+  <h2>Find the QR codes to reveal the letters!</h2>
+  <p id="progress">Letters found: <span id="letters"></span></p>
+  <button id="scan">Scan QR Code</button>
+  <button id="reset">Reset Progress</button>
+  <p id="msg"></p>
 </main>
 
+<!-- Script loading -->
+<script src="../../scripts/config.js"></script>
+<script src="../../scripts/app.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="../../scripts/qrcode.min.js"></script>
+
 <script>
-if (sessionStorage.getItem("access") !== "granted") window.location.href = "/index.html";
+window.addEventListener("DOMContentLoaded", () => {
+  const lettersEl = document.getElementById("letters");
+  const msg = document.getElementById("msg");
+  const scanBtn = document.getElementById("scan");
+  const resetBtn = document.getElementById("reset");
 
-// Hangman-style display
-function getMaskedWord() {
-  const found = store.letters;
-  return CONFIG.HIDDEN_PHRASE
-    .split('')
-    .map(c => (found.includes(c) ? c : '_'))
-    .join(' ');
-}
-
-function refreshDisplay() {
-  const maskedWordDiv = document.getElementById('maskedWord');
-  maskedWordDiv.textContent = getMaskedWord();
-
-  const lettersDiv = document.getElementById('letters');
-  lettersDiv.textContent = store.letters.length
-    ? 'Letters found: ' + store.letters.join(' ')
-    : 'Letters found: none';
-
-  checkCompletion();
-}
-
-// Check if word is complete
-async function checkCompletion() {
-  if(getMaskedWord().replace(/ /g,'') === CONFIG.HIDDEN_PHRASE) {
-    const code = await generateCompletionCode(CONFIG.HIDDEN_PHRASE);
-    document.getElementById('status').textContent = "✅ Word complete!";
-    document.getElementById('codeOut').textContent = "Your completion code: " + code;
+  // Access check
+  if (sessionStorage.getItem("access") !== "granted") {
+    window.location.href = CONFIG.BASE_PATH + "index.html";
+    return;
   }
-}
 
-refreshDisplay();
+  // Display found letters
+  function renderLetters() {
+    const letters = store.letters;
+    lettersEl.textContent = letters.join(" ") || "none yet";
+  }
 
-// Submission button
-document.getElementById("submit").onclick = async () => {
-  const guess = document.getElementById("guess").value.trim();
-  if (!guess) return;
-  const finalCode = await generateCompletionCode(guess);
-  document.getElementById("status").textContent = "Solved!";
-  document.getElementById("codeOut").textContent = "Your completion code: " + finalCode;
-};
+  renderLetters();
 
-// Reset
-document.getElementById("reset").onclick = () => {
-  store.reset();
-  refreshDisplay();
-  document.getElementById("status").textContent = "";
-  document.getElementById("codeOut").textContent = "";
-};
+  // Reset button
+  resetBtn.onclick = () => {
+    store.reset();
+    renderLetters();
+    msg.textContent = "Progress cleared!";
+  };
 
-// Update letters from other tabs
-window.addEventListener('storage', e => {
-  if(e.key === 'lettersUpdated') refreshDisplay();
+  // Go to scanner
+  scanBtn.onclick = () => {
+    window.location.href = CONFIG.BASE_PATH + "pages/scan/scan.html";
+  };
 });
 </script>
 </body>
