@@ -34,64 +34,75 @@ window.addEventListener("DOMContentLoaded", () => {
   const scanBtn = document.getElementById("scan");
   const resetBtn = document.getElementById("reset");
 
+  // Create a completion section dynamically
+  const completion = document.createElement("div");
+  completion.id = "completion";
+  document.querySelector("main").appendChild(completion);
+
   // Access guard
   if (sessionStorage.getItem("access") !== "granted") {
     window.location.href = CONFIG.BASE_PATH + "index.html";
     return;
   }
 
-  // Use HIDDEN_PHRASE from CONFIG so the UI reflects the expected final word/order
   const HIDDEN = (CONFIG.HIDDEN_PHRASE || "").split("");
 
-  // Render letters with grey/green boxes, accounting for duplicates:
-  // A letter box at position i is "collected" only if the player has scanned
-  // at least N occurrences of that letter, where N is how many times that
-  // letter appears in HIDDEN[0..i].
+  function countIn(arr, ch) {
+    return arr.reduce((n, x) => n + (x === ch ? 1 : 0), 0);
+  }
+
   function renderLetters() {
     lettersContainer.innerHTML = "";
-    const collected = store.letters; // array of scanned letters, e.g. ["A","R","T"]
+    const collected = store.letters;
 
-    // helper to count occurrences
-    const countIn = (arr, ch) => arr.reduce((n, x) => n + (x === ch ? 1 : 0), 0);
-
-    for (let i = 0; i < HIDDEN.length; i++) {
-      const letter = HIDDEN[i];
+    HIDDEN.forEach((letter, i) => {
       const box = document.createElement("div");
       box.textContent = letter;
       box.classList.add("letter-box");
 
-      // how many of this letter are required up to this position (inclusive)
       const requiredUpToThis = countIn(HIDDEN.slice(0, i + 1), letter);
-
-      // how many of this letter have been collected overall
       const collectedCount = countIn(collected, letter);
 
       if (collectedCount >= requiredUpToThis) {
         box.classList.add("collected");
       }
       lettersContainer.appendChild(box);
+    });
+
+    updateCompletion(collected);
+  }
+
+  async function updateCompletion(collected) {
+    const requiredTotal = HIDDEN.length;
+    const collectedCount = Math.min(collected.length, requiredTotal);
+
+    completion.innerHTML = `Progress: ${collectedCount} / ${requiredTotal}`;
+
+    if (collectedCount >= requiredTotal) {
+      const code = await generateCompletionCode(HIDDEN.join(""));
+      completion.innerHTML = `
+        🎉 <span class="success">All letters found!</span><br>
+        Your completion code:<br>
+        <span id="completion-code">${code}</span>
+      `;
     }
   }
 
-  // initial render
-  renderLetters();
-
-  // Reset button
   resetBtn.onclick = () => {
     store.reset();
     renderLetters();
     msg.textContent = "Progress cleared!";
   };
 
-  // Go to scanner
   scanBtn.onclick = () => {
     window.location.href = CONFIG.BASE_PATH + "pages/scan/scan.html";
   };
 
-  // If player scans in another tab/window, 'storage' event will update this page
   window.addEventListener("storage", () => {
     renderLetters();
   });
+
+  renderLetters();
 });
 </script>
 </body>
