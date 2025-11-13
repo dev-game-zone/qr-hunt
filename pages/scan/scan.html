@@ -61,16 +61,26 @@ window.addEventListener("DOMContentLoaded", () => {
       (err) => {}
     ).catch(e => {
       msg.textContent = "⚠️ Camera error: " + e.message;
+
+      // Add a Retry Camera button inside a button-group
+      const btnGroup = document.createElement("div");
+      btnGroup.classList.add("button-group");
+
       const refresh = document.createElement("button");
       refresh.textContent = "Retry Camera";
       refresh.onclick = () => window.location.reload();
+
+      btnGroup.appendChild(refresh);
+
+      // Add spacing before button
       msg.appendChild(document.createElement("br"));
-      msg.appendChild(refresh);
+      msg.appendChild(btnGroup);
     });
   } catch (e) {
     msg.textContent = "⚠️ Unable to start camera. " + e.message;
   }
 
+  // Back button
   backBtn.onclick = () => {
     window.location.href = CONFIG.BASE_PATH + "pages/game/game.html";
   };
