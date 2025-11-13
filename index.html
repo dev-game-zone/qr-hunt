@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Scavenger Hunt – Access</title>
-<link rel="stylesheet" href="/styles/styles.css">
-<script src="/scripts/config.js"></script>
-<script src="/scripts/app.js"></script>
+  <meta charset="utf-8">
+  <title>Scavenger Hunt – Access</title>
+  <link rel="stylesheet" href="/styles/styles.css">
 </head>
 <body>
 <main>
@@ -15,20 +13,54 @@
   <p id="msg"></p>
 </main>
 
+<!-- 🧩 Safe fallback: define sha256 if app.js hasn't loaded yet -->
 <script>
-document.getElementById("enter").onclick = async () => {
-  const code = document.getElementById("code").value;
-  const ok = await verifyAccessCode(code);
-  if (ok) {
-    sessionStorage.setItem("access", "granted");
-    window.location.href = "/pages/game/game.html";
-  } else {
-    document.getElementById("msg").textContent = "Incorrect code. Try again.";
+if (typeof sha256 === "undefined") {
+  async function sha256(text) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(buf))
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("")
+      .toUpperCase();
   }
-};
-if (sessionStorage.getItem("access") === "granted") {
-  window.location.href = "/pages/game/game.html";
+  console.log("⚙️ sha256 fallback loaded");
 }
+</script>
+
+<!-- ✅ Load scripts in correct order, all at the bottom -->
+<script src="/scripts/config.js"></script>
+<script src="/scripts/app.js"></script>
+<script src="/scripts/qrcode.min.js"></script>
+
+<!-- 🚀 Your page logic (runs *after* scripts are ready) -->
+<script>
+window.addEventListener("DOMContentLoaded", () => {
+  const codeInput = document.getElementById("code");
+  const msg = document.getElementById("msg");
+  const enterBtn = document.getElementById("enter");
+
+  // Redirect if already accessed
+  if (sessionStorage.getItem("access") === "granted") {
+    window.location.href = "/pages/game/game.html";
+    return;
+  }
+
+  enterBtn.onclick = async () => {
+    try {
+      const code = codeInput.value.trim();
+      const ok = await verifyAccessCode(code);
+      if (ok) {
+        sessionStorage.setItem("access", "granted");
+        window.location.href = "/pages/game/game.html";
+      } else {
+        msg.textContent = "❌ Incorrect code. Try again.";
+      }
+    } catch (err) {
+      console.error(err);
+      msg.textContent = "⚠️ There was a problem verifying the code.";
+    }
+  };
+});
 </script>
 </body>
 </html>
