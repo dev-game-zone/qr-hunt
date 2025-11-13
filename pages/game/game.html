@@ -124,7 +124,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     drawConfetti();
-
     setTimeout(() => stopConfetti(), 5000);
   }
 
@@ -138,16 +137,13 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 
   function updateProgress() {
-    const found = store.letters.slice(); // copy to handle duplicates
+    const found = store.letters;
     const boxes = container.querySelectorAll(".letter-box");
     let countFound = 0;
 
-    boxes.forEach((box, i) => {
-      const letter = phrase[i];
-      if (found.includes(letter)) {
+    boxes.forEach(box => {
+      if (found.includes(box.textContent)) {
         box.classList.add("collected");
-        // remove first occurrence to handle duplicates
-        found.splice(found.indexOf(letter), 1);
         countFound++;
       } else {
         box.classList.remove("collected");
@@ -183,7 +179,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (confirm("Reset your progress?")) {
       store.reset();
       updateProgress();
-      stopConfetti(); // stop confetti immediately
+      stopConfetti();
     }
   });
 
