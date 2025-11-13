@@ -268,8 +268,21 @@ th, td {
 }
 
 #completion-code {
-  opacity: 0;
-  transition: opacity 0.8s ease-in-out;
+  display: inline-block;
+  margin-top: 8px;
+  background-color: #e9f2ff;  /* keep existing light blue background */
+  color: #003366;             /* darker navy for visibility */
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 1.4rem;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.3s ease;
+}
+
+#completion-code:hover {
+  background-color: #cce0ff; /* subtle hover effect */
 }
 
 #completion-code.visible {
