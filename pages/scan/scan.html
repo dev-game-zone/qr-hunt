@@ -1,140 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Scan QR Marker</title>
-<link rel="stylesheet" href="/styles/styles.css">
-<style>
-/* Letter trail styling */
-.letter-path {
-  position: absolute;
-  font-size: 2rem;
-  font-weight: bold;
-  color: #ff6b6b;
-  transition: transform 0.5s, opacity 0.5s;
-  pointer-events: none;
-  text-shadow: 1px 1px 2px #000;
-}
-
-/* Button styling */
-.gameBtn {
-  margin: 10px auto;
-  padding: 8px 16px;
-  font-size: 1rem;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  display: block;
-}
-
-#refreshBtn { background-color: #ff6b6b; color: #fff; }
-#backBtn { background-color: #4caf50; color: #fff; }
-</style>
+  <meta charset="utf-8">
+  <title>Scavenger Hunt – Scan</title>
+  <link rel="stylesheet" href="../../styles/styles.css">
 </head>
 <body>
 <main>
-  <h2>Scan your QR Code</h2>
+  <h2>Scan a QR Code</h2>
   <div id="reader" style="width:300px; margin:auto;"></div>
-  <p id="result"></p>
-  <p id="cameraMsg" style="color:red; font-weight:bold;"></p>
-
-  <button id="refreshBtn" class="gameBtn" style="display:none;">Retry Scanner</button>
-  <button id="backBtn" class="gameBtn" onclick="window.location.href='/pages/game/game.html'">Back to Game</button>
+  <p id="msg"></p>
+  <button id="back">Back to Game</button>
 </main>
 
-<!-- Scripts in correct order -->
+<!-- Scripts -->
+<script src="../../scripts/config.js"></script>
+<script src="../../scripts/app.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="/scripts/config.js"></script>
-<script src="/scripts/app.js"></script>
-<script src="/scripts/qrcode.min.js"></script>
+<script src="../../scripts/qrcode.min.js"></script>
 
 <script>
-const resultBox = document.getElementById("result");
-const cameraMsg = document.getElementById("cameraMsg");
-const refreshBtn = document.getElementById("refreshBtn");
+window.addEventListener("DOMContentLoaded", () => {
+  const msg = document.getElementById("msg");
+  const backBtn = document.getElementById("back");
 
-let html5QrCodeInstance = null;
-
-// Function to show letter trail
-function displayLetterPath(letter) {
-  const span = document.createElement("span");
-  span.className = "letter-path";
-  span.textContent = letter;
-
-  // Random position on screen
-  span.style.top = `${Math.random() * 80 + 10}%`;
-  span.style.left = `${Math.random() * 80 + 10}%`;
-  document.body.appendChild(span);
-
-  // Fade out after 3s
-  setTimeout(() => {
-    span.style.opacity = "0";
-    setTimeout(() => span.remove(), 1000);
-  }, 3000);
-}
-
-// Start scanner
-async function startScanner() {
-  try {
-    refreshBtn.style.display = 'none';
-    if (html5QrCodeInstance) {
-      await html5QrCodeInstance.stop();
-      html5QrCodeInstance.clear();
-      html5QrCodeInstance = null;
-    }
-
-    html5QrCodeInstance = new Html5Qrcode("reader");
-    const cameras = await Html5Qrcode.getCameras();
-
-    if (cameras && cameras.length) {
-      html5QrCodeInstance.start(
-        cameras[0].id,
-        { fps: 10, qrbox: 250 },
-        decodedText => {
-          try {
-            const params = new URLSearchParams(decodedText);
-            const code = params.get("CODE");
-            if (code && CONFIG.LETTER_MAP[code]) {
-              store.add(CONFIG.LETTER_MAP[code]);
-              localStorage.setItem('lettersUpdated', Date.now());
-              resultBox.textContent = `✅ Found letter ${CONFIG.LETTER_MAP[code]}!`;
-              cameraMsg.textContent = "";
-
-              // Display the letter trail
-              displayLetterPath(CONFIG.LETTER_MAP[code]);
-            } else {
-              resultBox.textContent = "❌ Unknown or inactive QR code.";
-            }
-          } catch {
-            resultBox.textContent = "❌ Invalid QR format.";
-          }
-        },
-        errorMessage => console.warn(errorMessage)
-      );
-    } else {
-      cameraMsg.innerHTML = "⚠️ No camera detected on this device.<br>Please ensure a camera is connected and reload the page.";
-      refreshBtn.style.display = 'none';
-    }
-  } catch (err) {
-    console.error(err);
-    cameraMsg.innerHTML = "❌ Camera access denied or not available.<br>Please unblock your camera and refresh the page to continue scanning.";
-    refreshBtn.style.display = 'none';
+  // Access guard
+  if (sessionStorage.getItem("access") !== "granted") {
+    window.location.href = CONFIG.BASE_PATH + "index.html";
+    return;
   }
-}
 
-// Retry button click handler (for scan failures)
-refreshBtn.onclick = () => {
-  cameraMsg.textContent = "";
-  resultBox.textContent = "";
-  startScanner();
-};
+  // Initialize QR reader
+  try {
+    const reader = new Html5Qrcode("reader");
+    reader.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      (decodedText) => {
+        // Example QR mapping logic
+        const mapping = CONFIG.QR_MAP || {
+          "QR001": "A",
+          "QR002": "B",
+          "QR003": "C"
+        };
 
-// Redirect if access not granted
-if (sessionStorage.getItem("access") !== "granted") {
-  window.location.href = "/index.html";
-} else {
-  startScanner();
-}
+        if (mapping[decodedText]) {
+          store.add(mapping[decodedText]);
+          msg.textContent = `✅ Found letter: ${mapping[decodedText]}`;
+        } else {
+          msg.textContent = "⚠️ Unknown QR code.";
+        }
+      },
+      (err) => {}
+    ).catch(e => {
+      msg.textContent = "⚠️ Camera error: " + e.message;
+      const refresh = document.createElement("button");
+      refresh.textContent = "Retry Camera";
+      refresh.onclick = () => window.location.reload();
+      msg.appendChild(document.createElement("br"));
+      msg.appendChild(refresh);
+    });
+  } catch (e) {
+    msg.textContent = "⚠️ Unable to start camera. " + e.message;
+  }
+
+  backBtn.onclick = () => {
+    window.location.href = CONFIG.BASE_PATH + "pages/game/game.html";
+  };
+});
 </script>
 </body>
 </html>
