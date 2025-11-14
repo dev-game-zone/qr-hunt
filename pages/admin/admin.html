@@ -110,6 +110,7 @@
     <div class="button-group">
       <button class="tab-button active" data-tab="generator-tab">QR Generator</button>
       <button class="tab-button" data-tab="tombola-tab">Tombola Draw</button>
+      <button class="tab-button" data-tab="orbview-tab">ORB View</button>
     </div>
 
     <!-- Generator Tab -->
@@ -143,6 +144,12 @@
 
     <!-- Tombola Tab -->
     <div id="tombola-tab" class="tab-content">
+          <!-- ORB View Tab -->
+          <div id="orbview-tab" class="tab-content" style="text-align:center;">
+            <h3>ORB View</h3>
+            <iframe src="orbs.html" title="ORB Holding Page" style="width:420px;height:320px;border:none;box-shadow:0 0 8px #ccc;border-radius:12px;background:#fafafa;"></iframe>
+            <p style="color:#888;font-size:0.95em;">Live view of all registered ORBs.</p>
+          </div>
       <h3>Tombola Draw</h3>
       <p>Registered Codes:</p>
       <textarea id="tombolaCodes" readonly></textarea>

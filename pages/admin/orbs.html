@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Scavenger Hunt – ORBs Holding Page</title>
+  <link rel="stylesheet" href="../../styles/styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background: #fafafa;
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+    #floating-orbs {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 400px;
+      height: 300px;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 9998;
+      overflow: visible;
+    }
+  </style>
+</head>
+<body>
+  <div id="floating-orbs"></div>
+  <script>
+    const floatingOrbs = document.getElementById("floating-orbs");
+    let registeredCodes = [];
+
+    function loadCodes() {
+      registeredCodes = JSON.parse(localStorage.getItem("tombolaCodes") || "[]");
+    }
+
+    function renderFloatingOrbs() {
+      floatingOrbs.innerHTML = "";
+      registeredCodes.forEach(code => {
+        const orb = document.createElement("div");
+        orb.className = "letter-box orb-dynamic";
+        orb.textContent = code;
+        orb.style.left = `${Math.random() * (floatingOrbs.clientWidth - 60)}px`;
+        orb.style.top = `${Math.random() * (floatingOrbs.clientHeight - 60)}px`;
+        floatingOrbs.appendChild(orb);
+      });
+    }
+
+    function animateFloatingOrbs() {
+      const orbs = document.querySelectorAll("#floating-orbs .letter-box");
+      orbs.forEach(orb => {
+        const dx = (Math.random() - 0.5) * 3.0;
+        const dy = (Math.random() - 0.5) * 3.0;
+        let left = parseFloat(orb.style.left) + dx;
+        let top = parseFloat(orb.style.top) + dy;
+        left = Math.max(0, Math.min(orb.parentElement.clientWidth - 60, left));
+        top = Math.max(0, Math.min(orb.parentElement.clientHeight - 60, top));
+        orb.style.left = left + "px";
+        orb.style.top = top + "px";
+      });
+      requestAnimationFrame(animateFloatingOrbs);
+    }
+
+    function updateOrbs() {
+      loadCodes();
+      renderFloatingOrbs();
+    }
+
+    window.addEventListener("storage", updateOrbs);
+    window.addEventListener("DOMContentLoaded", () => {
+      updateOrbs();
+      animateFloatingOrbs();
+      // Optionally, auto-refresh every 10s in case storage event doesn't fire
+      setInterval(updateOrbs, 10000);
+    });
+  </script>
+</body>
+</html>
