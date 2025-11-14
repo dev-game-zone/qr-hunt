@@ -283,6 +283,14 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Notify ORB view iframe to update
+  function notifyOrbView() {
+    const orbIframe = document.querySelector('#orbview-tab iframe');
+    if (orbIframe) {
+      orbIframe.contentWindow.postMessage('update-orbs', '*');
+    }
+  }
+
   exportBtn.onclick = () => {
     if (Object.keys(qrMap).length === 0) { exportMsg.textContent = "⚠️ No mappings to export."; return; }
     const blob = new Blob([JSON.stringify(qrMap, null, 2)], { type: "application/json" });
@@ -292,6 +300,7 @@ window.addEventListener("DOMContentLoaded", () => {
     link.click();
     exportMsg.textContent = "✅ Mapping exported as qr-map.json";
   };
+
 
   // =====================
   // Tombola Draw
@@ -305,6 +314,7 @@ window.addEventListener("DOMContentLoaded", () => {
       t.textContent = code;
       ticketList.appendChild(t);
     });
+    notifyOrbView();
   }
 
   function renderFloatingOrbs() {

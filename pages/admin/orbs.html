@@ -37,12 +37,28 @@
 
     function renderFloatingOrbs() {
       floatingOrbs.innerHTML = "";
+      const placedOrbs = [];
+      const orbSize = 60;
+      const buffer = 8;
       registeredCodes.forEach(code => {
         const orb = document.createElement("div");
         orb.className = "letter-box orb-dynamic";
         orb.textContent = code;
-        orb.style.left = `${Math.random() * (floatingOrbs.clientWidth - 60)}px`;
-        orb.style.top = `${Math.random() * (floatingOrbs.clientHeight - 60)}px`;
+        let tries = 0;
+        let left, top, collides;
+        do {
+          left = Math.random() * (floatingOrbs.clientWidth - orbSize);
+          top = Math.random() * (floatingOrbs.clientHeight - orbSize);
+          collides = placedOrbs.some(o => {
+            const dx = o.left - left;
+            const dy = o.top - top;
+            return Math.sqrt(dx*dx + dy*dy) < (orbSize + buffer);
+          });
+          tries++;
+        } while (collides && tries < 100);
+        orb.style.left = `${left}px`;
+        orb.style.top = `${top}px`;
+        placedOrbs.push({left, top});
         floatingOrbs.appendChild(orb);
       });
     }
