@@ -29,9 +29,7 @@
   margin-bottom: 15px;
 }
 
-/* ================================
-   Floating Orbs Layer
-================================= */
+/* Floating Orbs Layer - minimal inline rules (appearance controlled in styles.css) */
 #floating-orbs {
   position: fixed;
   top: 50%;
@@ -44,27 +42,10 @@
   overflow: visible;
 }
 
-#floating-orbs .letter-box {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background-color: #bdbdbd;
-  color: white;
-  font-weight: bold;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: absolute;
-  transition: all 1s ease;
-}
-
-#floating-orbs .letter-box.winner {
-  background-color: #ffcc00;
-  color: #000;
-  z-index: 10001;
-  transform: scale(1.5);
-  transition: all 1.5s ease;
-}
+/* individual orb visuals (size, padding, shape) are defined in styles.css so they
+   can adapt and scale to text; keep minimal positioning helpers here */
+#floating-orbs .letter-box { position: absolute; transform-origin: center; }
+#floating-orbs .letter-box.winner { z-index: 10001; }
 
 /* ================================
    Optional Glow Animation for Winner
@@ -77,6 +58,12 @@
 
 #floating-orbs .letter-box.winner.glow {
   animation: winner-glow 1s ease-in-out infinite alternate;
+}
+
+/* temporary suspense highlight used during draw countdown */
+#floating-orbs .letter-box.suspense {
+  box-shadow: 0 0 18px rgba(255,255,255,0.45);
+  transform: scale(1.12);
 }
 
 /* ================================
@@ -97,8 +84,7 @@
 
   <!-- PIN Entry -->
   <div id="pin-section">
-    <label for="adminPin">Enter Admin PIN:</label>
-    <input type="text" id="adminPin" placeholder="PIN">
+    <input type="text" id="adminPin" placeholder="Enter Admin PIN">
     <div class="button-group">
       <button id="verifyPin">Verify</button>
     </div>
@@ -118,7 +104,7 @@
       <h3>QR Code Generator</h3>
       <label for="qrId">Enter Code ID (e.g. QR001):</label>
       <input id="qrId" type="text" placeholder="QR001">
-
+      <p />
       <label for="qrLetter">Letter or Word:</label>
       <input id="qrLetter" type="text" placeholder="A">
 
@@ -143,9 +129,8 @@
       </div>
       <!-- ORB View Tab -->
       <div id="orbview-tab" class="tab-content" style="text-align:center;display:none;">
-        <h3>ORB View</h3>
-        <div id="floating-orbs" class="orb-container"></div>
         <p style="color:#888;font-size:0.95em;">Live view of all registered ORBs.</p>
+        <div id="floating-orbs" class="orb-container"></div>
         <div class="button-group">
           <button id="startDraw">Start Draw</button>
         </div>
@@ -204,7 +189,8 @@ window.addEventListener("DOMContentLoaded", () => {
   const floatingOrbs = document.getElementById("floating-orbs");
 
   let qrMap = {};
-  let registeredCodes = JSON.parse(localStorage.getItem("tombolaCodes") || "[]");
+  // Normalize stored codes to uppercase trimmed values
+  let registeredCodes = (JSON.parse(localStorage.getItem("tombolaCodes") || "[]") || []).map(c => String(c).trim().toUpperCase());
 
   renderTombolaCodes();
   notifyOrbView();
@@ -242,8 +228,13 @@ window.addEventListener("DOMContentLoaded", () => {
       btn.classList.add("active");
       // Show ORBs only on ORB View tab
       if (target === "orbview-tab") {
+        // switch to overlay mode so the ORB area centers and overlays the page
+        floatingOrbs.classList.add('overlay');
         floatingOrbs.style.display = "block";
+        // Re-render ORBs now the container is visible so placement uses real dimensions
+        notifyOrbView();
       } else {
+        floatingOrbs.classList.remove('overlay');
         floatingOrbs.style.display = "none";
       }
     };
@@ -291,7 +282,14 @@ window.addEventListener("DOMContentLoaded", () => {
     // When ORB view is inlined, render directly
     const orbContainer = document.getElementById('orbview-tab').querySelector('#floating-orbs');
     if (orbContainer) {
-      renderFloatingOrbsInContainer(orbContainer);
+      // If the container hasn't been laid out yet its clientWidth/height may be 0.
+      // Defer to the next animation frame so the browser can apply layout after
+      // switching to overlay/display: block. This ensures accurate placement.
+      if ((orbContainer.clientWidth || orbContainer.clientHeight) === 0) {
+        requestAnimationFrame(() => renderFloatingOrbsInContainer(orbContainer));
+      } else {
+        renderFloatingOrbsInContainer(orbContainer);
+      }
     }
   }
 
@@ -328,8 +326,12 @@ window.addEventListener("DOMContentLoaded", () => {
   function renderFloatingOrbsInContainer(container) {
     container.innerHTML = "";
     const placedOrbs = [];
-    const orbSize = 60;
     const buffer = 20;
+    // Compute available area for placement. If container hasn't been laid out yet
+    // clientWidth/clientHeight may be 0 — fall back to a sensible default (900x900
+    // or most of the viewport) so orbs don't all collapse to (0,0).
+    const availableW = container.clientWidth || Math.min(window.innerWidth * 0.95, 900);
+    const availableH = container.clientHeight || Math.min(window.innerHeight * 0.85, 900);
     registeredCodes.forEach(code => {
       const orb = document.createElement("div");
       orb.className = "letter-box orb-dynamic";
@@ -340,24 +342,44 @@ window.addEventListener("DOMContentLoaded", () => {
       const light = 40 + Math.floor(Math.random() * 21); // 40-60%
       orb.style.backgroundColor = `hsl(${hue}, ${sat}%, ${light}%)`;
       orb.style.color = (light > 60 ? '#000' : '#fff');
+
+      // Append hidden to measure its real size (text may make it wider than nominal)
+      orb.style.visibility = 'hidden';
+      // use transform for animation later; left/top are used only for measurement
+      orb.style.left = '0px';
+      orb.style.top = '0px';
+      container.appendChild(orb);
+
+      const orbW = Math.max(60, orb.offsetWidth);
+      const orbH = Math.max(60, orb.offsetHeight);
+
       let tries = 0;
       let left, top, collides;
       do {
-        left = Math.random() * (container.clientWidth - orbSize);
-        top = Math.random() * (container.clientHeight - orbSize);
-        const centerLeft = left + orbSize / 2;
-        const centerTop = top + orbSize / 2;
+        left = Math.random() * Math.max(0, (availableW - orbW));
+        top = Math.random() * Math.max(0, (availableH - orbH));
+        const centerLeft = left + orbW / 2;
+        const centerTop = top + orbH / 2;
         collides = placedOrbs.some(o => {
           const dx = o.centerLeft - centerLeft;
           const dy = o.centerTop - centerTop;
-          return Math.sqrt(dx*dx + dy*dy) < (orbSize + buffer);
+          return Math.sqrt(dx*dx + dy*dy) < (Math.max(o.w, orbW) + buffer);
         });
         tries++;
-      } while (collides && tries < 200);
-      orb.style.left = `${left}px`;
-      orb.style.top = `${top}px`;
-      placedOrbs.push({centerLeft: left + orbSize / 2, centerTop: top + orbSize / 2});
-      container.appendChild(orb);
+      } while (collides && tries < 300);
+
+      // Position using transform so future animation uses GPU compositing.
+      // Keep left/top at 0 so translate values are exact coordinates (avoid doubling).
+      orb.style.left = `0px`;
+      orb.style.top = `0px`;
+      orb.style.visibility = 'visible';
+      // initialize transform translate to the position and set internal position state
+      orb._x = left; orb._y = top;
+      orb.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+      // velocity state for smooth motion
+      orb._vx = (Math.random() - 0.5) * 0.6;
+      orb._vy = (Math.random() - 0.5) * 0.6;
+      placedOrbs.push({centerLeft: left + orbW / 2, centerTop: top + orbH / 2, w: orbW, h: orbH, el: orb});
     });
     // clear previous highlights
     const winnerMsgElem = document.querySelector('#orbview-tab #winner-msg');
@@ -366,16 +388,34 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   function animateFloatingOrbs() {
-    const orbs = document.querySelectorAll("#floating-orbs .letter-box:not(.winner)");
+    const orbs = Array.from(document.querySelectorAll("#floating-orbs .letter-box:not(.winner)"));
+    const dt = 1; // timestep scalar for damping
     orbs.forEach(orb => {
-      const dx = (Math.random() - 0.5) * 3.0 // 0.5; // slower, suspenseful
-      const dy = (Math.random() - 0.5) * 3.0 // 0.5;
-      let left = parseFloat(orb.style.left) + dx;
-      let top = parseFloat(orb.style.top) + dy;
-      left = Math.max(0, Math.min(orb.parentElement.clientWidth - 60, left));
-      top = Math.max(0, Math.min(orb.parentElement.clientHeight - 60, top));
-      orb.style.left = left + "px";
-      orb.style.top = top + "px";
+      // ignore orbs moved to fixed positioning (winners)
+      if (getComputedStyle(orb).position === 'fixed') return;
+      // read base left/top (set during render) as bounds reference
+      const baseLeft = parseFloat(orb.style.left) || 0;
+      const baseTop = parseFloat(orb.style.top) || 0;
+      // fall back to overlay size if parent isn't laid out yet
+      const parentW = orb.parentElement.clientWidth || Math.min(window.innerWidth * 0.95, 900);
+      const parentH = orb.parentElement.clientHeight || Math.min(window.innerHeight * 0.85, 900);
+      // velocity nudges
+      orb._vx += (Math.random() - 0.5) * 0.2;
+      orb._vy += (Math.random() - 0.5) * 0.2;
+      // apply damping
+      orb._vx *= 0.95;
+      orb._vy *= 0.95;
+      // compute new position
+      let x = (orb._x || baseLeft) + orb._vx * dt;
+      let y = (orb._y || baseTop) + orb._vy * dt;
+      const orbW = orb.offsetWidth;
+      const orbH = orb.offsetHeight;
+      // clamp to container bounds
+      x = Math.max(0, Math.min(parentW - orbW, x));
+      y = Math.max(0, Math.min(parentH - orbH, y));
+      orb._x = x; orb._y = y;
+      // apply transform - translate3d uses GPU compositing and avoids layout thrashing
+      orb.style.transform = `translate3d(${x}px, ${y}px, 0)`;
     });
     requestAnimationFrame(animateFloatingOrbs);
   }
@@ -386,26 +426,102 @@ window.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => confettiCanvas.getContext('2d')?.clearRect(0,0,confettiCanvas.width,confettiCanvas.height), 5000);
   }
 
-  startDrawBtn.onclick = () => {
-    if (!registeredCodes.length) { winnerMsg.textContent = "⚠️ No registered codes."; return; }
-    const winner = registeredCodes[Math.floor(Math.random() * registeredCodes.length)];
-    winnerMsg.textContent = `🎉 Winner: ${winner}`;
-    ticketList.querySelectorAll(".ticket").forEach(t => t.classList.remove("winner"));
-    const winnerDiv = Array.from(ticketList.children).find(t => t.textContent === winner);
-    if (winnerDiv) winnerDiv.classList.add("winner");
+  // Listen for storage updates so the ORB view refreshes when registrations
+  // are added from other tabs/windows (e.g., registration page).
+  window.addEventListener('storage', (ev) => {
+    if (ev.key === 'tombolaCodes') {
+      try {
+        registeredCodes = (JSON.parse(ev.newValue || '[]') || []).map(c => String(c).trim().toUpperCase());
+      } catch (e) {
+        registeredCodes = [];
+      }
+      renderTombolaCodes();
+      // If ORB tab is active, update it immediately
+      const activeTab = document.querySelector('.tab-button.active')?.dataset.tab;
+      if (activeTab === 'orbview-tab') notifyOrbView();
+    }
+  });
 
-    // Highlight winner orb with animation
-    const winnerOrb = Array.from(document.querySelectorAll("#floating-orbs .letter-box")).find(orb => orb.textContent === winner);
-    if (winnerOrb) {
-      winnerOrb.classList.add("winner", "glow");
-      const centerX = floatingOrbs.clientWidth / 2 - 30;
-      const centerY = floatingOrbs.clientHeight / 2 - 30;
-      winnerOrb.style.left = centerX + "px";
-      winnerOrb.style.top = centerY + "px";
-      winnerOrb.style.transform = "scale(2)";
+  startDrawBtn.onclick = () => {
+    startDrawBtn.disabled = true;
+    try { localStorage.setItem('tombolaLocked', '1'); } catch(e) {}
+
+    if (!registeredCodes.length) {
+      winnerMsg.textContent = "⚠️ No registered codes.";
+      try { localStorage.removeItem('tombolaLocked'); } catch(e) {}
+      if (startDrawBtn) startDrawBtn.disabled = false;
+      return;
     }
 
-    runConfetti();
+    winnerMsg.textContent = 'Drawing... please wait';
+
+    const orbs = Array.from(document.querySelectorAll('#floating-orbs .letter-box'));
+    const suspensionDuration = 15000; // ms
+    const tickInterval = 200; // ms highlight tick
+    let tickTimer = null;
+    let startTime = Date.now();
+
+    function clearSuspense() {
+      if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+      orbs.forEach(o => o.classList.remove('suspense'));
+    }
+
+    tickTimer = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      if (elapsed >= suspensionDuration) { clearSuspense(); startCountdown(); return; }
+      orbs.forEach(o => o.classList.remove('suspense'));
+      const count = Math.max(1, Math.floor(Math.random() * Math.min(3, orbs.length)));
+      for (let i = 0; i < count; i++) {
+        const idx = Math.floor(Math.random() * orbs.length);
+        orbs[idx].classList.add('suspense');
+      }
+    }, tickInterval);
+
+    function startCountdown() {
+      let n = 5;
+      winnerMsg.textContent = `Revealing in ${n}...`;
+      const countdown = setInterval(() => {
+        n--;
+        if (n > 0) {
+          winnerMsg.textContent = `Revealing in ${n}...`;
+          orbs.forEach(o => o.classList.remove('suspense'));
+          const idx = Math.floor(Math.random() * orbs.length);
+          orbs[idx].classList.add('suspense');
+        } else {
+          clearInterval(countdown);
+          const winner = registeredCodes[Math.floor(Math.random() * registeredCodes.length)];
+          revealWinner(winner);
+        }
+      }, 1000);
+    }
+
+    function revealWinner(winner) {
+      // finalize
+      winnerMsg.textContent = `🎉 Winner: ${winner}`;
+      ticketList.querySelectorAll('.ticket').forEach(t => t.classList.remove('winner'));
+      const winnerDiv = Array.from(ticketList.children).find(t => t.textContent === winner);
+      if (winnerDiv) winnerDiv.classList.add('winner');
+
+      const winnerOrb = Array.from(document.querySelectorAll('#floating-orbs .letter-box')).find(orb => orb.textContent === winner);
+      if (winnerOrb) {
+        document.querySelectorAll('#floating-orbs .letter-box.centered').forEach(o => o.classList.remove('centered'));
+        winnerOrb.classList.add('winner', 'glow', 'centered');
+        const parent = winnerOrb.parentElement;
+        const parentW = parent.clientWidth || Math.min(window.innerWidth * 0.95, 900);
+        const parentH = parent.clientHeight || Math.min(window.innerHeight * 0.85, 900);
+        const cx = (parentW) / 2 - (winnerOrb.offsetWidth / 2);
+        const cy = (parentH) / 2 - (winnerOrb.offsetHeight / 2);
+        winnerOrb._vx = 0; winnerOrb._vy = 0;
+        winnerOrb.style.left = '0px'; winnerOrb.style.top = '0px';
+        winnerOrb._x = cx; winnerOrb._y = cy;
+        winnerOrb.style.transform = `translate3d(${cx}px, ${cy}px, 0) scale(1.9)`;
+      }
+
+      runConfetti();
+      clearSuspense();
+      // keep the tombolaLocked flag in storage until admin presses Reset
+      // do not re-enable Start Draw here — Reset will clear the lock and re-enable
+    }
   };
 
   resetTombolaBtn.onclick = async () => {
@@ -414,9 +530,12 @@ window.addEventListener("DOMContentLoaded", () => {
     if (pin !== daily) { alert("Invalid PIN. Cannot reset."); return; }
     registeredCodes = [];
     localStorage.setItem("tombolaCodes", JSON.stringify(registeredCodes));
+    try { localStorage.removeItem('tombolaLocked'); } catch(e) {}
     renderTombolaCodes();
       notifyOrbView();
       animateFloatingOrbs();
+    // re-enable Start Draw after reset
+    if (startDrawBtn) startDrawBtn.disabled = false;
     winnerMsg.textContent = "";
   };
 });

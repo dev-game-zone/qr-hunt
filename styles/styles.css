@@ -43,6 +43,33 @@ input[type="text"] {
   }
 }
 
+/* Admin-specific narrower inputs to avoid large layout stretching */
+body.admin input[type="text"] {
+  width: 200px;
+}
+
+/* Registration page inputs should also be compact */
+/* Registration inputs: slightly narrower for better balance */
+body.register input[type="text"] {
+  width: 68%;
+  max-width: 520px;
+  margin: 8px auto;
+  display: block;
+}
+
+/* Allow generator inputs to expand fully on small screens */
+@media (max-width: 480px) {
+  #generator-tab input[type="text"] {
+    width: 100%;
+  }
+  body.admin input[type="text"] {
+    width: 100%;
+  }
+  body.register input[type="text"] {
+    width: 100%;
+  }
+}
+
 /* ================================
    Buttons
 ================================= */
@@ -67,6 +94,16 @@ input[type="text"] {
   transition: background 0.3s ease;
   text-align: center;
 }
+
+.button-group button:disabled {
+  opacity: 0.5;
+  cursor: default;
+  filter: grayscale(20%);
+}
+
+/* default button color and hover for any page that didn't set a page-specific color */
+.button-group button { background-color: #007bff; }
+.button-group button:hover { background-color: #0056b3; }
 
 /* Page-specific button colors */
 .generator .button-group button {
@@ -312,8 +349,24 @@ th, td {
   text-align: center;
 }
 
-.tab-button.active { background-color: #007bff; }
-.tab-button:hover { background-color: #0056b3; }
+.tab-button.active {
+  background-color: transparent;
+  color: #ff9800;
+  box-shadow: none;
+  position: relative;
+}
+.tab-button.active::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -6px;
+  height: 4px;
+  background: #ff9800;
+  border-radius: 2px;
+}
+/* keep hover for inactive buttons (blue) */
+.tab-button:not(.active):hover { background-color: #0056b3; }
 
 /* admin specific tab button tweak */
 body.admin .tab-button { min-width: 140px; }
@@ -329,11 +382,8 @@ body.admin .tab-button { min-width: 140px; }
   width: 800px;
   height: 320px;
   margin: 0 auto;
-  border-radius: 12px;
-  background: #fafafa;
   position: relative;
-  overflow: hidden;
-  box-shadow: 0 0 8px #ccc;
+  overflow: visible;
   pointer-events: none;
 }
 
@@ -350,41 +400,77 @@ body.admin .tab-button { min-width: 140px; }
   overflow: visible;
 }
 
+/* Overlay variant applied when ORB view is active */
+#floating-orbs.overlay {
+  /* centered overlay box sized roughly 900x900 but responsive on small screens */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 900px;
+  height: 900px;
+  max-width: 95vw;
+  max-height: 90vh;
+  transform: translate(-50%, -50%);
+  background: transparent;
+  border-radius: 12px;
+  box-shadow: none;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 9998;
+}
+
 #floating-orbs .letter-box {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
+  min-width: 60px;
+  min-height: 60px;
+  padding: 0.4em 0.8em;
+  border-radius: 9999px;
   background-color: #bdbdbd;
   color: white;
   font-weight: bold;
-  display: flex;
+  display: inline-flex;
   justify-content: center;
   align-items: center;
   position: absolute;
-  transition: all 1s ease;
+  /* Avoid transitioning position/transform to prevent jitter when JS animates every frame.
+     Keep transitions for color/shadow only and hint the browser to optimize transforms. */
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+  will-change: transform;
+}
+/* Ensure orb text is readable and vertically centered regardless of other rules */
+#floating-orbs .letter-box,
+.orb-dynamic {
+  font-size: 14px !important;
+  line-height: 1 !important;
+  text-align: center;
 }
 /* Scalable ORB for dynamic text sizing */
 .orb-dynamic {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5em 1em;
-  min-width: 2em;
-  min-height: 2em;
-  border-radius: 50%;
+  padding: 0.45em 0.9em;
+  min-width: 2.2em;
+  min-height: 2.2em;
+  border-radius: 9999px;
   background: #eee;
   font-size: 1em;
   white-space: nowrap;
-  aspect-ratio: 1 / 1;
   box-sizing: border-box;
+  width: auto;
+  height: auto;
 }
 
 #floating-orbs .letter-box.winner {
   background-color: #ffcc00;
   color: #000;
   z-index: 10001;
-  transform: scale(1.5);
-  transition: all 1.5s ease;
+}
+
+/* centered winner state - places the orb exactly in viewport center */
+#floating-orbs .letter-box.centered {
+  /* Centering is handled by JS via transform so we avoid conflicting transforms in CSS.
+     This class only adds visual emphasis (shadow) and can be used as a flag. */
+  box-shadow: 0 8px 48px rgba(255, 152, 0, 0.25);
 }
 
 /* ================================
@@ -401,4 +487,8 @@ body.admin .tab-button { min-width: 140px; }
   gap: 8px;
   margin-top: 15px;
   justify-content: center;
+}
+
+#ticket-list {
+  display: none;
 }

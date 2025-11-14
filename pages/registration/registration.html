@@ -5,6 +5,11 @@
   <title>Scavenger Hunt – Registration</title>
   <link rel="stylesheet" href="../../styles/styles.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Show typed input in uppercase but keep placeholder in Camel Case */
+    #playerCode { text-transform: uppercase; }
+    #playerCode::placeholder { text-transform: none; color: #999; }
+  </style>
 </head>
 <body class="register">
 <main>
@@ -27,6 +32,31 @@
 <script src="../../scripts/config.js"></script>
 <script src="../../scripts/app.js"></script>
 <script>
+// UI lock handling
+function setRegistrationLocked(locked) {
+  const inputs = [document.getElementById('playerName'), document.getElementById('playerCode'), document.getElementById('adminPin')];
+  inputs.forEach(i => { if (i) i.disabled = !!locked; });
+  const btn = document.getElementById('registerBtn');
+  if (btn) btn.disabled = !!locked;
+  const msg = document.getElementById('registerMsg');
+  if (locked) {
+    msg.textContent = '🔒 Registration locked while a draw is active.';
+    msg.style.color = 'orange';
+  } else {
+    msg.textContent = '';
+  }
+}
+
+// initialize lock state on load
+setRegistrationLocked(!!localStorage.getItem('tombolaLocked'));
+
+// react to storage events (draw started or reset in another tab)
+window.addEventListener('storage', (ev) => {
+  if (ev.key === 'tombolaLocked') {
+    setRegistrationLocked(!!ev.newValue);
+  }
+});
+
 document.getElementById("registerBtn").onclick = async () => {
   const name = document.getElementById("playerName").value.trim();
   const code = document.getElementById("playerCode").value.trim();
@@ -46,12 +76,19 @@ document.getElementById("registerBtn").onclick = async () => {
     return;
   }
 
-  // Save registration locally (persistent)
+  // Normalize code (case-insensitive) and prevent duplicates
   const regs = JSON.parse(localStorage.getItem("tombolaCodes") || "[]");
-  if (!regs.includes(code)) regs.push(code);
+  const normalizedExisting = regs.map(r => String(r).trim().toUpperCase());
+  const codeNorm = code.trim().toUpperCase();
+  if (normalizedExisting.includes(codeNorm)) {
+    msg.textContent = `⚠️ Code ${codeNorm} is already registered.`;
+    msg.style.color = "red";
+    return;
+  }
+  regs.push(codeNorm);
   localStorage.setItem("tombolaCodes", JSON.stringify(regs));
 
-  msg.textContent = `✅ Registered ${name} with code ${code}`;
+  msg.textContent = `✅ Registered ${name} with code ${codeNorm}`;
   msg.style.color = "green";
 
   // Clear inputs
@@ -59,6 +96,10 @@ document.getElementById("registerBtn").onclick = async () => {
   document.getElementById("playerCode").value = "";
   document.getElementById("adminPin").value = "";
 };
+
+// Keep the input visually uppercase via CSS, but don't change the user's typed value.
+// Deduplication and storage use an uppercased normalization on save, so we don't
+// modify the user's original input while they type.
 </script>
 </body>
 </html>
