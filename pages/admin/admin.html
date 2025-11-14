@@ -5,9 +5,32 @@
 <title>Scavenger Hunt – Admin Panel</title>
 <link rel="stylesheet" href="../../styles/styles.css">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
 /* ================================
-   Floating Orbs Layer (Admin Tombola)
+   Tabs & Content
+================================= */
+#tabs { display: none; }
+
+.tab-content { display: none; padding: 15px 0; }
+.tab-content.active { display: block; }
+
+/* ================================
+   Tombola Codes Textarea
+================================= */
+#tombolaCodes {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 1.1rem;
+  resize: vertical;
+  margin-bottom: 15px;
+}
+
+/* ================================
+   Floating Orbs Layer
 ================================= */
 #floating-orbs {
   position: fixed;
@@ -18,6 +41,7 @@
   transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: 9998;
+  overflow: visible;
 }
 
 #floating-orbs .letter-box {
@@ -38,23 +62,34 @@
   background-color: #ffcc00;
   color: #000;
   z-index: 10001;
-  transform: scale(1);
+  transform: scale(1.5);
   transition: all 1.5s ease;
 }
 
 /* ================================
-   Optional: add a subtle glow animation to winner orb
+   Optional Glow Animation for Winner
 ================================= */
 @keyframes winner-glow {
   0% { box-shadow: 0 0 10px #ffcc00; }
   50% { box-shadow: 0 0 25px #ffcc00; }
   100% { box-shadow: 0 0 10px #ffcc00; }
 }
+
 #floating-orbs .letter-box.winner.glow {
   animation: winner-glow 1s ease-in-out infinite alternate;
 }
+
+/* ================================
+   Pop animation (used for tickets/letters)
+================================= */
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
 </style>
 </head>
+
 <body class="admin">
 <main>
   <h2>Admin Panel</h2>
@@ -62,7 +97,7 @@
 
   <!-- PIN Entry -->
   <div id="pin-section">
-    <label>Enter Admin PIN:</label>
+    <label for="adminPin">Enter Admin PIN:</label>
     <input type="text" id="adminPin" placeholder="PIN">
     <div class="button-group">
       <button id="verifyPin">Verify</button>
@@ -71,7 +106,7 @@
   </div>
 
   <!-- Tabs -->
-  <div id="tabs" style="display:none;">
+  <div id="tabs">
     <div class="button-group">
       <button class="tab-button active" data-tab="generator-tab">QR Generator</button>
       <button class="tab-button" data-tab="tombola-tab">Tombola Draw</button>
@@ -80,18 +115,17 @@
     <!-- Generator Tab -->
     <div id="generator-tab" class="tab-content active">
       <h3>QR Code Generator</h3>
-      <label>
-        Enter Code ID (e.g. QR001):
-        <input id="qrId" type="text" placeholder="QR001">
-      </label>
-      <label>
-        Letter or Word:
-        <input id="qrLetter" type="text" placeholder="A">
-      </label>
+      <label for="qrId">Enter Code ID (e.g. QR001):</label>
+      <input id="qrId" type="text" placeholder="QR001">
+
+      <label for="qrLetter">Letter or Word:</label>
+      <input id="qrLetter" type="text" placeholder="A">
+
       <div class="button-group">
         <button id="generate">Generate QR</button>
         <button id="download">Download QR</button>
       </div>
+
       <div id="qrcode"></div>
       <p id="msg"></p>
 
@@ -100,6 +134,7 @@
         <thead><tr><th>QR Code</th><th>Letter</th></tr></thead>
         <tbody></tbody>
       </table>
+
       <div class="button-group">
         <button id="export">Export Mapping</button>
       </div>
@@ -110,7 +145,7 @@
     <div id="tombola-tab" class="tab-content">
       <h3>Tombola Draw</h3>
       <p>Registered Codes:</p>
-      <textarea id="tombolaCodes" readonly style="width:100%; min-height:120px;"></textarea>
+      <textarea id="tombolaCodes" readonly></textarea>
       <div class="button-group">
         <button id="startDraw">Start Draw</button>
         <button id="resetTombola">Reset Tombola</button>
@@ -272,8 +307,8 @@ window.addEventListener("DOMContentLoaded", () => {
   function animateFloatingOrbs() {
     const orbs = document.querySelectorAll("#floating-orbs .letter-box:not(.winner)");
     orbs.forEach(orb => {
-      const dx = (Math.random() - 0.5) * 2.0 // 0.5; // slower, suspenseful
-      const dy = (Math.random() - 0.5) * 2.0 // 0.5;
+      const dx = (Math.random() - 0.5) * 3.0 // 0.5; // slower, suspenseful
+      const dy = (Math.random() - 0.5) * 3.0 // 0.5;
       let left = parseFloat(orb.style.left) + dx;
       let top = parseFloat(orb.style.top) + dy;
       left = Math.max(0, Math.min(orb.parentElement.clientWidth - 60, left));
