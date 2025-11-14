@@ -2,8 +2,8 @@
    Main container
 ================================= */
 main {
-  max-width: 500px;
-  margin: auto;
+  max-width: 900px;
+  margin: 20px auto;
   padding: 20px;
   font-family: Arial, sans-serif;
   text-align: center;
@@ -315,13 +315,30 @@ th, td {
 .tab-button.active { background-color: #007bff; }
 .tab-button:hover { background-color: #0056b3; }
 
+/* admin specific tab button tweak */
+body.admin .tab-button { min-width: 140px; }
+
 .tab-content { display: none; padding: 15px 0; }
 .tab-content.active { display: block; }
 
 /* ================================
    Floating Orbs Layer (Admin / Tombola)
 ================================= */
+/* ORB container when in tab (not full-screen overlay) */
+.orb-container {
+  width: 800px;
+  height: 320px;
+  margin: 0 auto;
+  border-radius: 12px;
+  background: #fafafa;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 8px #ccc;
+  pointer-events: none;
+}
+
 #floating-orbs {
+  /* kept for compatibility if used as overlay elsewhere */
   position: fixed;
   top: 50%;
   left: 50%;
@@ -379,5 +396,9 @@ th, td {
 }
 
 #ticket-list {
-  display: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 15px;
+  justify-content: center;
 }
