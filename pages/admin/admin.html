@@ -147,11 +147,11 @@
           <!-- ORB View Tab -->
           <div id="orbview-tab" class="tab-content" style="text-align:center;">
             <h3>ORB View</h3>
-            <iframe src="orbs.html" title="ORB Holding Page" style="width:800px;height:320px;border:none;box-shadow:0 0 8px #ccc;border-radius:12px;background:#fafafa;"></iframe>
+            <div id="floating-orbs" style="width:800px;height:320px;margin:0 auto;border-radius:12px;background:#fafafa;position:relative;overflow:visible;box-shadow:0 0 8px #ccc;"></div>
             <p style="color:#888;font-size:0.95em;">Live view of all registered ORBs.</p>
             <button id="startDraw">Start Draw</button>
+            <p id="winner-msg"></p>
           </div>
-          <p id="winner-msg"></p>
       <h3>Tombola Draw</h3>
       <p>Registered Codes:</p>
       <textarea id="tombolaCodes" readonly></textarea>
@@ -163,8 +163,7 @@
   </div>
 </main>
 
-<!-- Floating Orbs & Confetti -->
-<div id="floating-orbs"></div>
+<!-- Confetti canvas -->
 <canvas id="confetti-canvas"></canvas>
 
 <!-- Scripts -->
@@ -283,11 +282,12 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Notify ORB view iframe to update
+  // Notify ORB view (inlined) to update
   function notifyOrbView() {
-    const orbIframe = document.querySelector('#orbview-tab iframe');
-    if (orbIframe) {
-      orbIframe.contentWindow.postMessage('update-orbs', '*');
+    // When ORB view is inlined, render directly
+    const orbContainer = document.getElementById('orbview-tab').querySelector('#floating-orbs');
+    if (orbContainer) {
+      renderFloatingOrbsInContainer(orbContainer);
     }
   }
 
@@ -318,15 +318,47 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderFloatingOrbs() {
-    floatingOrbs.innerHTML = "";
+    // keep for backward-compat; do nothing when using inlined renderer
+  }
+
+  function renderFloatingOrbsInContainer(container) {
+    container.innerHTML = "";
+    const placedOrbs = [];
+    const orbSize = 60;
+    const buffer = 20;
     registeredCodes.forEach(code => {
       const orb = document.createElement("div");
       orb.className = "letter-box orb-dynamic";
       orb.textContent = code;
-      orb.style.left = `${Math.random() * (floatingOrbs.clientWidth - 60)}px`;
-      orb.style.top = `${Math.random() * (floatingOrbs.clientHeight - 60)}px`;
-      floatingOrbs.appendChild(orb);
+      // random color (HSL) and readable text color
+      const hue = Math.floor(Math.random() * 360);
+      const sat = 60 + Math.floor(Math.random() * 21); // 60-80%
+      const light = 40 + Math.floor(Math.random() * 21); // 40-60%
+      orb.style.backgroundColor = `hsl(${hue}, ${sat}%, ${light}%)`;
+      orb.style.color = (light > 60 ? '#000' : '#fff');
+      let tries = 0;
+      let left, top, collides;
+      do {
+        left = Math.random() * (container.clientWidth - orbSize);
+        top = Math.random() * (container.clientHeight - orbSize);
+        const centerLeft = left + orbSize / 2;
+        const centerTop = top + orbSize / 2;
+        collides = placedOrbs.some(o => {
+          const dx = o.centerLeft - centerLeft;
+          const dy = o.centerTop - centerTop;
+          return Math.sqrt(dx*dx + dy*dy) < (orbSize + buffer);
+        });
+        tries++;
+      } while (collides && tries < 200);
+      orb.style.left = `${left}px`;
+      orb.style.top = `${top}px`;
+      placedOrbs.push({centerLeft: left + orbSize / 2, centerTop: top + orbSize / 2});
+      container.appendChild(orb);
     });
+    // clear previous highlights
+    const winnerMsgElem = document.querySelector('#orbview-tab #winner-msg');
+    if (winnerMsgElem) winnerMsgElem.textContent = '';
+    container.querySelectorAll('.letter-box').forEach(o => o.classList.remove('winner', 'glow'));
   }
 
   function animateFloatingOrbs() {
@@ -379,7 +411,8 @@ window.addEventListener("DOMContentLoaded", () => {
     registeredCodes = [];
     localStorage.setItem("tombolaCodes", JSON.stringify(registeredCodes));
     renderTombolaCodes();
-    renderFloatingOrbs();
+      notifyOrbView();
+      animateFloatingOrbs();
     winnerMsg.textContent = "";
   };
 });
