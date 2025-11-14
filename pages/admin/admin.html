@@ -141,17 +141,17 @@
       </div>
       <p id="exportMsg"></p>
     </div>
+    <!-- ORB View Tab -->
+    <div id="orbview-tab" class="tab-content" style="text-align:center;display:none;">
+      <h3>ORB View</h3>
+      <div id="floating-orbs" style="width:800px;height:320px;margin:0 auto;border-radius:12px;background:#fafafa;position:relative;overflow:visible;box-shadow:0 0 8px #ccc;"></div>
+      <p style="color:#888;font-size:0.95em;">Live view of all registered ORBs.</p>
+      <button id="startDraw">Start Draw</button>
+      <p id="winner-msg"></p>
+    </div>
 
     <!-- Tombola Tab -->
     <div id="tombola-tab" class="tab-content">
-          <!-- ORB View Tab -->
-          <div id="orbview-tab" class="tab-content" style="text-align:center;">
-            <h3>ORB View</h3>
-            <div id="floating-orbs" style="width:800px;height:320px;margin:0 auto;border-radius:12px;background:#fafafa;position:relative;overflow:visible;box-shadow:0 0 8px #ccc;"></div>
-            <p style="color:#888;font-size:0.95em;">Live view of all registered ORBs.</p>
-            <button id="startDraw">Start Draw</button>
-            <p id="winner-msg"></p>
-          </div>
       <h3>Tombola Draw</h3>
       <p>Registered Codes:</p>
       <textarea id="tombolaCodes" readonly></textarea>
@@ -204,10 +204,11 @@ window.addEventListener("DOMContentLoaded", () => {
   let registeredCodes = JSON.parse(localStorage.getItem("tombolaCodes") || "[]");
 
   renderTombolaCodes();
-  renderFloatingOrbs();
+  notifyOrbView();
   animateFloatingOrbs();
   
-  floatingOrbs.style.display = "none";
+  // hide inlined ORBs until ORB View tab is active
+  if (floatingOrbs) floatingOrbs.style.display = "none";
 
   // =====================
   // PIN verification
