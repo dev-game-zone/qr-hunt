@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Scavenger Hunt – Admin Panel</title>
+<link rel="stylesheet" href="../../styles/styles.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+/* ================================
+   Floating Orbs Layer (Admin Tombola)
+================================= */
+#floating-orbs {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 400px;
+  height: 300px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 9998;
+}
+
+#floating-orbs .letter-box {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #bdbdbd;
+  color: white;
+  font-weight: bold;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  transition: all 1s ease;
+}
+
+#floating-orbs .letter-box.winner {
+  background-color: #ffcc00;
+  color: #000;
+  z-index: 10001;
+  transform: scale(1);
+  transition: all 1.5s ease;
+}
+
+/* ================================
+   Optional: add a subtle glow animation to winner orb
+================================= */
+@keyframes winner-glow {
+  0% { box-shadow: 0 0 10px #ffcc00; }
+  50% { box-shadow: 0 0 25px #ffcc00; }
+  100% { box-shadow: 0 0 10px #ffcc00; }
+}
+#floating-orbs .letter-box.winner.glow {
+  animation: winner-glow 1s ease-in-out infinite alternate;
+}
+</style>
+</head>
+<body class="admin">
+<main>
+  <h2>Admin Panel</h2>
+  <p>Secure access required to manage QR codes and run the Tombola.</p>
+
+  <!-- PIN Entry -->
+  <div id="pin-section">
+    <label>Enter Admin PIN:</label>
+    <input type="text" id="adminPin" placeholder="PIN">
+    <div class="button-group">
+      <button id="verifyPin">Verify</button>
+    </div>
+    <p id="pinMsg"></p>
+  </div>
+
+  <!-- Tabs -->
+  <div id="tabs" style="display:none;">
+    <div class="button-group">
+      <button class="tab-button active" data-tab="generator-tab">QR Generator</button>
+      <button class="tab-button" data-tab="tombola-tab">Tombola Draw</button>
+    </div>
+
+    <!-- Generator Tab -->
+    <div id="generator-tab" class="tab-content active">
+      <h3>QR Code Generator</h3>
+      <label>
+        Enter Code ID (e.g. QR001):
+        <input id="qrId" type="text" placeholder="QR001">
+      </label>
+      <label>
+        Letter or Word:
+        <input id="qrLetter" type="text" placeholder="A">
+      </label>
+      <div class="button-group">
+        <button id="generate">Generate QR</button>
+        <button id="download">Download QR</button>
+      </div>
+      <div id="qrcode"></div>
+      <p id="msg"></p>
+
+      <h3>Current Mappings (Session Only)</h3>
+      <table id="mapTable">
+        <thead><tr><th>QR Code</th><th>Letter</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="button-group">
+        <button id="export">Export Mapping</button>
+      </div>
+      <p id="exportMsg"></p>
+    </div>
+
+    <!-- Tombola Tab -->
+    <div id="tombola-tab" class="tab-content">
+      <h3>Tombola Draw</h3>
+      <p>Registered Codes:</p>
+      <textarea id="tombolaCodes" readonly style="width:100%; min-height:120px;"></textarea>
+      <div class="button-group">
+        <button id="startDraw">Start Draw</button>
+        <button id="resetTombola">Reset Tombola</button>
+      </div>
+      <div id="ticket-list"></div>
+      <p id="winner-msg"></p>
+    </div>
+  </div>
+</main>
+
+<!-- Floating Orbs & Confetti -->
+<div id="floating-orbs"></div>
+<canvas id="confetti-canvas"></canvas>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="../../scripts/app.js"></script>
+<script src="../../scripts/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
+<script>
+window.addEventListener("DOMContentLoaded", () => {
+  const pinSection = document.getElementById("pin-section");
+  const adminPinInput = document.getElementById("adminPin");
+  const verifyPinBtn = document.getElementById("verifyPin");
+  const pinMsg = document.getElementById("pinMsg");
+  const tabsContainer = document.getElementById("tabs");
+  const tabButtons = document.querySelectorAll(".tab-button");
+  const tabContents = document.querySelectorAll(".tab-content");
+
+  const qrId = document.getElementById("qrId");
+  const qrLetter = document.getElementById("qrLetter");
+  const generateBtn = document.getElementById("generate");
+  const downloadBtn = document.getElementById("download");
+  const qrcodeDiv = document.getElementById("qrcode");
+  const msg = document.getElementById("msg");
+  const mapTableBody = document.querySelector("#mapTable tbody");
+  const exportBtn = document.getElementById("export");
+  const exportMsg = document.getElementById("exportMsg");
+
+  const tombolaCodesInput = document.getElementById("tombolaCodes");
+  const startDrawBtn = document.getElementById("startDraw");
+  const resetTombolaBtn = document.getElementById("resetTombola");
+  const ticketList = document.getElementById("ticket-list");
+  const winnerMsg = document.getElementById("winner-msg");
+  const confettiCanvas = document.getElementById("confetti-canvas");
+  const floatingOrbs = document.getElementById("floating-orbs");
+
+  let qrMap = {};
+  let registeredCodes = JSON.parse(localStorage.getItem("tombolaCodes") || "[]");
+
+  renderTombolaCodes();
+  renderFloatingOrbs();
+  animateFloatingOrbs();
+
+  // =====================
+  // PIN verification
+  // =====================
+  verifyPinBtn.onclick = async () => {
+    const pin = adminPinInput.value.trim();
+    const daily = await generateDailyAdminPin();
+    if (pin === daily) {
+      pinSection.style.display = "none";
+      tabsContainer.style.display = "block";
+    } else {
+      pinMsg.textContent = "⚠️ Invalid PIN.";
+      pinMsg.style.color = "red";
+    }
+  };
+
+  // =====================
+  // Tab switching
+  // =====================
+  tabButtons.forEach(btn => {
+    btn.onclick = () => {
+      const target = btn.dataset.tab;
+      tabContents.forEach(tab => tab.style.display = "none");
+      tabContents.forEach(tab => tab.classList.remove("active"));
+      document.getElementById(target).style.display = "block";
+      document.getElementById(target).classList.add("active");
+      tabButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+    };
+  });
+
+  // =====================
+  // QR Generator
+  // =====================
+  let currentDataUrl = null;
+  generateBtn.onclick = () => {
+    const id = qrId.value.trim();
+    const letter = qrLetter.value.trim();
+    if (!id || !letter) { msg.textContent = "⚠️ Please enter both a code ID and letter."; return; }
+
+    qrcodeDiv.innerHTML = "";
+    const qrSize = Math.min(window.innerWidth * 0.8, 300);
+    new QRCode(qrcodeDiv, { text: id, width: qrSize, height: qrSize });
+
+    msg.textContent = `✅ QR code created for ${id} → ${letter}`;
+    qrMap[id] = letter;
+    renderTable();
+    setTimeout(() => { const canvas = qrcodeDiv.querySelector("canvas"); if (canvas) currentDataUrl = canvas.toDataURL("image/png"); }, 500);
+  };
+
+  downloadBtn.onclick = () => {
+    if (!currentDataUrl) { msg.textContent = "⚠️ Generate a QR code first."; return; }
+    const id = qrId.value.trim() || "qr_code";
+    const link = document.createElement("a");
+    link.href = currentDataUrl;
+    link.download = id + ".png";
+    link.click();
+  };
+
+  function renderTable() {
+    mapTableBody.innerHTML = "";
+    Object.entries(qrMap).forEach(([id, letter]) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `<td>${id}</td><td>${letter}</td>`;
+      mapTableBody.appendChild(row);
+    });
+  }
+
+  exportBtn.onclick = () => {
+    if (Object.keys(qrMap).length === 0) { exportMsg.textContent = "⚠️ No mappings to export."; return; }
+    const blob = new Blob([JSON.stringify(qrMap, null, 2)], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "qr-map.json";
+    link.click();
+    exportMsg.textContent = "✅ Mapping exported as qr-map.json";
+  };
+
+  // =====================
+  // Tombola Draw
+  // =====================
+  function renderTombolaCodes() {
+    tombolaCodesInput.value = registeredCodes.join("\n");
+    ticketList.innerHTML = "";
+    registeredCodes.forEach(code => {
+      const t = document.createElement("div");
+      t.className = "ticket";
+      t.textContent = code;
+      ticketList.appendChild(t);
+    });
+  }
+
+  function renderFloatingOrbs() {
+    floatingOrbs.innerHTML = "";
+    registeredCodes.forEach(code => {
+      const orb = document.createElement("div");
+      orb.className = "letter-box";
+      orb.textContent = code;
+      orb.style.left = `${Math.random() * (floatingOrbs.clientWidth - 60)}px`;
+      orb.style.top = `${Math.random() * (floatingOrbs.clientHeight - 60)}px`;
+      floatingOrbs.appendChild(orb);
+    });
+  }
+
+  function animateFloatingOrbs() {
+    const orbs = document.querySelectorAll("#floating-orbs .letter-box:not(.winner)");
+    orbs.forEach(orb => {
+      const dx = (Math.random() - 0.5) * 2.0 // 0.5; // slower, suspenseful
+      const dy = (Math.random() - 0.5) * 2.0 // 0.5;
+      let left = parseFloat(orb.style.left) + dx;
+      let top = parseFloat(orb.style.top) + dy;
+      left = Math.max(0, Math.min(orb.parentElement.clientWidth - 60, left));
+      top = Math.max(0, Math.min(orb.parentElement.clientHeight - 60, top));
+      orb.style.left = left + "px";
+      orb.style.top = top + "px";
+    });
+    requestAnimationFrame(animateFloatingOrbs);
+  }
+
+  function runConfetti() {
+    const myConfetti = confetti.create(confettiCanvas, { resize: true });
+    myConfetti({ particleCount: 200, spread: 70, origin: { y: 0.6 } });
+    setTimeout(() => confettiCanvas.getContext('2d')?.clearRect(0,0,confettiCanvas.width,confettiCanvas.height), 5000);
+  }
+
+  startDrawBtn.onclick = () => {
+    if (!registeredCodes.length) { winnerMsg.textContent = "⚠️ No registered codes."; return; }
+    const winner = registeredCodes[Math.floor(Math.random() * registeredCodes.length)];
+    winnerMsg.textContent = `🎉 Winner: ${winner}`;
+    ticketList.querySelectorAll(".ticket").forEach(t => t.classList.remove("winner"));
+    const winnerDiv = Array.from(ticketList.children).find(t => t.textContent === winner);
+    if (winnerDiv) winnerDiv.classList.add("winner");
+
+    // Highlight winner orb with animation
+    const winnerOrb = Array.from(document.querySelectorAll("#floating-orbs .letter-box")).find(orb => orb.textContent === winner);
+    if (winnerOrb) {
+      winnerOrb.classList.add("winner", "glow");
+      const centerX = floatingOrbs.clientWidth / 2 - 30;
+      const centerY = floatingOrbs.clientHeight / 2 - 30;
+      winnerOrb.style.left = centerX + "px";
+      winnerOrb.style.top = centerY + "px";
+      winnerOrb.style.transform = "scale(2)";
+    }
+
+    runConfetti();
+  };
+
+  resetTombolaBtn.onclick = async () => {
+    const pin = prompt("Enter Admin PIN to reset Tombola:");
+    const daily = await generateDailyAdminPin();
+    if (pin !== daily) { alert("Invalid PIN. Cannot reset."); return; }
+    registeredCodes = [];
+    localStorage.setItem("tombolaCodes", JSON.stringify(registeredCodes));
+    renderTombolaCodes();
+    renderFloatingOrbs();
+    winnerMsg.textContent = "";
+  };
+});
+</script>
+</body>
+</html>

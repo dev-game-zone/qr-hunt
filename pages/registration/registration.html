@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scavenger Hunt – Registration</title>
+  <link rel="stylesheet" href="../../styles/styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body class="register">
+<main>
+  <h2>Player Registration</h2>
+  <p>Enter your name and your unique code. Admin verification required.</p>
+
+  <div class="admin-input-row">
+    <input type="text" id="playerName" placeholder="Your Name">
+    <input type="text" id="playerCode" placeholder="Your Code">
+    <input type="text" id="adminPin" placeholder="Admin PIN">
+  </div>
+
+  <div class="button-group">
+    <button id="registerBtn">Register</button>
+  </div>
+
+  <p id="registerMsg"></p>
+</main>
+
+<script src="../../scripts/config.js"></script>
+<script src="../../scripts/app.js"></script>
+<script>
+document.getElementById("registerBtn").onclick = async () => {
+  const name = document.getElementById("playerName").value.trim();
+  const code = document.getElementById("playerCode").value.trim();
+  const pin = document.getElementById("adminPin").value.trim();
+  const msg = document.getElementById("registerMsg");
+
+  if (!name || !code || !pin) {
+    msg.textContent = "⚠️ Fill all fields.";
+    msg.style.color = "red";
+    return;
+  }
+
+  const dailyPin = await generateDailyAdminPin();
+  if (pin !== dailyPin) {
+    msg.textContent = "⚠️ Invalid Admin PIN.";
+    msg.style.color = "red";
+    return;
+  }
+
+  // Save registration locally (persistent)
+  const regs = JSON.parse(localStorage.getItem("tombolaCodes") || "[]");
+  if (!regs.includes(code)) regs.push(code);
+  localStorage.setItem("tombolaCodes", JSON.stringify(regs));
+
+  msg.textContent = `✅ Registered ${name} with code ${code}`;
+  msg.style.color = "green";
+
+  // Clear inputs
+  document.getElementById("playerName").value = "";
+  document.getElementById("playerCode").value = "";
+  document.getElementById("adminPin").value = "";
+};
+</script>
+</body>
+</html>

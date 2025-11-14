@@ -17,11 +17,16 @@ function getDailySalt() {
   const day = String(d.getUTCDate()).padStart(2, "0");
   return `${y}${m}${day}${CONFIG.SECRET_SALT}`;
 }
-generateDailyCode().then(console.log)
+
 // Generate today's access code
 async function generateDailyCode() {
   const hash = await sha256(getDailySalt());
   return hash.slice(0, CONFIG.CODE_LENGTH);
+}
+
+async function generateDailyAdminPin() {
+  const hash = await sha256(getDailySalt() + CONFIG.ADMIN_SALT);
+  return hash.slice(0, CONFIG.ADMIN_PIN_LENGTH);
 }
 
 // Verify access code entered by player
@@ -49,6 +54,9 @@ const store = {
 
 // Generate completion code from final word/phrase
 async function generateCompletionCode(finalWord) {
-  const hash = await sha256(finalWord.toUpperCase() + CONFIG.SECRET_SALT);
+  const epoch = Date.now(); // unique per player
+  const input = finalWord.toUpperCase() + epoch + CONFIG.SECRET_SALT;
+  const hash = await sha256(input);
   return hash.slice(0, CONFIG.CODE_LENGTH);
 }
+
