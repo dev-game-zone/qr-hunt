@@ -207,6 +207,8 @@ window.addEventListener("DOMContentLoaded", () => {
   renderTombolaCodes();
   renderFloatingOrbs();
   animateFloatingOrbs();
+  
+  floatingOrbs.style.display = "none";
 
   // =====================
   // PIN verification
@@ -235,6 +237,12 @@ window.addEventListener("DOMContentLoaded", () => {
       document.getElementById(target).classList.add("active");
       tabButtons.forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
+      // Show ORBs only on ORB View tab
+      if (target === "orbview-tab") {
+        floatingOrbs.style.display = "block";
+      } else {
+        floatingOrbs.style.display = "none";
+      }
     };
   });
 
