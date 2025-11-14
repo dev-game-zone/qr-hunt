@@ -27,7 +27,13 @@
 </head>
 <body>
   <div id="floating-orbs"></div>
+  <div style="text-align:center;margin-top:20px;">
+    <button id="startDraw" style="font-size:1.1em;padding:8px 24px;border-radius:8px;background:#ffcc00;color:#222;border:none;box-shadow:0 2px 8px #ccc;cursor:pointer;">Start Draw</button>
+    <div id="winner-msg" style="margin-top:12px;font-size:1.2em;color:#008800;"></div>
+  </div>
   <script>
+      const startDrawBtn = document.getElementById("startDraw");
+      const winnerMsg = document.getElementById("winner-msg");
     const floatingOrbs = document.getElementById("floating-orbs");
     let registeredCodes = [];
 
@@ -39,7 +45,7 @@
       floatingOrbs.innerHTML = "";
       const placedOrbs = [];
       const orbSize = 60;
-      const buffer = 8;
+      const buffer = 20;
       registeredCodes.forEach(code => {
         const orb = document.createElement("div");
         orb.className = "letter-box orb-dynamic";
@@ -49,18 +55,37 @@
         do {
           left = Math.random() * (floatingOrbs.clientWidth - orbSize);
           top = Math.random() * (floatingOrbs.clientHeight - orbSize);
+          // Use center positions for collision check
+          const centerLeft = left + orbSize / 2;
+          const centerTop = top + orbSize / 2;
           collides = placedOrbs.some(o => {
-            const dx = o.left - left;
-            const dy = o.top - top;
+            const dx = o.centerLeft - centerLeft;
+            const dy = o.centerTop - centerTop;
             return Math.sqrt(dx*dx + dy*dy) < (orbSize + buffer);
           });
           tries++;
-        } while (collides && tries < 100);
+        } while (collides && tries < 200);
         orb.style.left = `${left}px`;
         orb.style.top = `${top}px`;
-        placedOrbs.push({left, top});
+        placedOrbs.push({centerLeft: left + orbSize / 2, centerTop: top + orbSize / 2});
         floatingOrbs.appendChild(orb);
       });
+      winnerMsg.textContent = "";
+      document.querySelectorAll("#floating-orbs .letter-box").forEach(o => o.classList.remove("winner", "glow"));
+        startDrawBtn.onclick = () => {
+          if (!registeredCodes.length) {
+            winnerMsg.textContent = "⚠️ No registered codes.";
+            return;
+          }
+          const winner = registeredCodes[Math.floor(Math.random() * registeredCodes.length)];
+          winnerMsg.textContent = `🎉 Winner: ${winner}`;
+          // Highlight winner orb
+          const winnerOrb = Array.from(document.querySelectorAll("#floating-orbs .letter-box")).find(orb => orb.textContent === winner);
+          if (winnerOrb) {
+            winnerOrb.classList.add("winner", "glow");
+            winnerOrb.style.zIndex = 10001;
+          }
+        };
     }
 
     function animateFloatingOrbs() {
