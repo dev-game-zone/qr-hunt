@@ -74,11 +74,11 @@
       // Position GIF overlay exactly over detective
       detectiveGif.style.left = detective.style.left;
       detectiveGif.style.top = detective.style.top;
+
+      // Flip GIF according to direction and preserve size
+      detectiveGif.style.transform = direction === 1 ? 'scaleX(-1)' : 'scaleX(1)';
       detectiveGif.style.width = detective.style.width;
       detectiveGif.style.height = detective.style.height;
-
-      // Flip GIF according to direction
-      detectiveGif.style.transform = direction === 1 ? 'rotateY(180deg)' : 'rotateY(0deg)';
 
       // Hide Lottie temporarily
       detective.style.visibility = 'hidden';
@@ -97,7 +97,7 @@
         y = savedY;
         direction = savedDirection;
         gifPlaying = false;
-      }, 1500); // adjust to your GIF length
+      }, 1000);
     }
 
     function animate() {
