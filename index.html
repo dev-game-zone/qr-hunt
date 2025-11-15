@@ -30,10 +30,14 @@
       path: 'pages/images/detective_search.json'
     });
 
-    const speed = 25; // horizontal px/sec
+    // Mobile-friendly scaling
+    const detectiveWidth = Math.min(120, window.innerWidth * 0.15); // 15% of viewport width max
+    detective.style.width = detectiveWidth + 'px';
+    detective.style.height = detectiveWidth + 'px';
+
+    const speed = window.innerWidth * 0.02; // px/frame speed proportional to screen width
     let direction = -1; // -1 = right-to-left start
-    const detectiveWidth = 120;
-    let x = -detectiveWidth; // start offscreen left
+    let x = -detectiveWidth;
 
     const minY = window.innerHeight * 0.55;
     const maxY = window.innerHeight * 0.7;
@@ -45,19 +49,21 @@
     detective.style.transform = 'rotateY(180deg)'; // face right initially
 
     function animate() {
-      const delta = speed / 60; // px/frame
+      const delta = speed / 100; // approximate px/frame
       x += delta * direction;
-
       detective.style.left = `${x}px`;
-      detective.style.top = `${y}px`;
 
-      // Offscreen → teleport & randomize y with slight tilt
+      // subtle vertical sway
+      const sway = Math.sin(x / 50) * 5; // ±5px up/down
+      detective.style.top = `${y + sway}px`;
+
+      // Offscreen → teleport & randomize y with slight lean
       if (direction === 1 && x > window.innerWidth) {
         direction = -1;
         x = window.innerWidth; // teleport offscreen right
         y = minY + Math.random() * (maxY - minY);
         detective.style.top = `${y}px`;
-        detective.style.transform = 'rotateY(0deg) rotateZ(-5deg)'; // face left with slight lean
+        detective.style.transform = 'rotateY(0deg) rotateZ(-5deg)'; // face left
       }
 
       if (direction === -1 && x < -detectiveWidth) {
@@ -65,14 +71,22 @@
         x = -detectiveWidth; // teleport offscreen left
         y = minY + Math.random() * (maxY - minY);
         detective.style.top = `${y}px`;
-        detective.style.transform = 'rotateY(180deg) rotateZ(5deg)'; // face right with slight lean
+        detective.style.transform = 'rotateY(180deg) rotateZ(5deg)'; // face right
       }
 
       requestAnimationFrame(animate);
     }
 
     requestAnimationFrame(animate);
+
+    // Optional: adjust on resize
+    window.addEventListener('resize', () => {
+      const newWidth = Math.min(120, window.innerWidth * 0.15);
+      detective.style.width = newWidth + 'px';
+      detective.style.height = newWidth + 'px';
+    });
   </script>
+
 
   <main>
     <h2>Enter Today’s Access Code</h2>
