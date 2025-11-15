@@ -31,7 +31,7 @@
     });
 
     // Mobile-friendly scaling
-    const detectiveWidth = Math.min(120, window.innerWidth * 0.15); // 15% of viewport width max
+    const detectiveWidth = Math.min(180, window.innerWidth * 0.20); // 15% of viewport width max
     detective.style.width = detectiveWidth + 'px';
     detective.style.height = detectiveWidth + 'px';
 
@@ -49,7 +49,7 @@
     detective.style.transform = 'rotateY(180deg)'; // face right initially
 
     function animate() {
-      const delta = speed / 100; // approximate px/frame
+      const delta = speed / 90; // approximate px/frame
       x += delta * direction;
       detective.style.left = `${x}px`;
 
