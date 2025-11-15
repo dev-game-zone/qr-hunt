@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scavenger Hunt – Game</title>
   <link rel="stylesheet" href="../../styles/styles.css">
+  <link rel="icon" type="image/png" href="../../favicon.png">
   <style>
     main {
       max-width: 500px;
@@ -29,6 +30,11 @@
       pointer-events: none;
       z-index: 9999;
     }
+    .locked-msg {
+      margin-top: 12px;
+      font-weight: bold;
+      color: #c00;
+    }
   </style>
 </head>
 <body class="game">
@@ -42,6 +48,8 @@
     <p id="completion-code">----</p>
     <p class="copy-msg" id="copy-msg"></p>
   </div>
+
+  <p id="locked-msg" class="locked-msg" style="display:none;">Hunt completed — reset to play again.</p>
 
   <div class="button-group">
     <button id="scan">Scan QR Code</button>
@@ -59,6 +67,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   const progressText = document.getElementById("progress-text");
   const completionCodeEl = document.getElementById("completion-code");
   const copyMsg = document.getElementById("copy-msg");
+  const lockedMsg = document.getElementById("locked-msg");
+  const scanBtn = document.getElementById("scan");
 
   if (sessionStorage.getItem("access") !== "granted") {
     window.location.href = CONFIG.BASE_PATH + "index.html";
@@ -152,10 +162,19 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     progressText.textContent = `Found ${countFound} of ${phrase.length}`;
 
+    if (progress.isCompleted()) {
+      completionCodeEl.textContent = progress.getCompletionCode();
+      scanBtn.disabled = true;
+      lockedMsg.style.display = "block";
+      return;
+    }
+
     if (countFound === phrase.length) {
       generateCompletionCode(CONFIG.HIDDEN_PHRASE).then(code => {
         completionCodeEl.textContent = code;
         triggerConfetti();
+        scanBtn.disabled = true;
+        lockedMsg.style.display = "block";
       });
     } else {
       completionCodeEl.textContent = "----";
@@ -166,20 +185,25 @@ window.addEventListener("DOMContentLoaded", async () => {
     const code = completionCodeEl.textContent;
     if (code && code !== "----") {
       navigator.clipboard.writeText(code);
-      copyMsg.textContent = "✅ Copied!";
+      copyMsg.textContent = "✓ Copied!";
       setTimeout(() => (copyMsg.textContent = ""), 1500);
     }
   });
 
   document.getElementById("scan").addEventListener("click", () => {
-    window.location.href = CONFIG.BASE_PATH + "pages/scan/scan.html";
+    if (!progress.isCompleted()) {
+      window.location.href = CONFIG.BASE_PATH + "pages/scan/scan.html";
+    }
   });
 
   document.getElementById("reset").addEventListener("click", () => {
     if (confirm("Reset your progress?")) {
       store.reset();
-      updateProgress();
+      progress.clearCompleted();
+      progress.clearCompletionCode();
+      sessionStorage.removeItem("access");
       stopConfetti();
+      window.location.href = CONFIG.BASE_PATH + "index.html";
     }
   });
 

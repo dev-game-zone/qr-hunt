@@ -1,5 +1,8 @@
 const CONFIG = {
-  BASE_PATH: "/qr-hunt/",
+   BASE_PATH: window.location.hostname === "127.0.0.1" || 
+             window.location.hostname === "localhost"
+             ? "/"
+             : "/qr-hunt/",   // your GitHub Pages repo folder
   SECRET_SALT: "YOUR_SECRET_SALT",
   CODE_LENGTH: 8,
   LETTER_MAP: {

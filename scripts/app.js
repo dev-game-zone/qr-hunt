@@ -1,4 +1,4 @@
-// app.js
+// app.js (updated secure version)
 
 // SHA-256 hashing
 async function sha256(text) {
@@ -24,6 +24,7 @@ async function generateDailyCode() {
   return hash.slice(0, CONFIG.CODE_LENGTH);
 }
 
+// Generate today's admin pin
 async function generateDailyAdminPin() {
   const hash = await sha256(getDailySalt() + CONFIG.ADMIN_SALT);
   return hash.slice(0, CONFIG.ADMIN_PIN_LENGTH);
@@ -52,11 +53,41 @@ const store = {
   }
 };
 
-// Generate completion code from final word/phrase
+// Completion lock + code storage
+const progress = {
+  isCompleted() {
+    return localStorage.getItem("completed") === "yes";
+  },
+  setCompleted() {
+    localStorage.setItem("completed", "yes");
+  },
+  clearCompleted() {
+    localStorage.removeItem("completed");
+  },
+
+  getCompletionCode() {
+    return localStorage.getItem("completion_code") || null;
+  },
+  setCompletionCode(code) {
+    localStorage.setItem("completion_code", code);
+  },
+  clearCompletionCode() {
+    localStorage.removeItem("completion_code");
+  }
+};
+
+// Generate completion code and lock progress
 async function generateCompletionCode(finalWord) {
-  const epoch = Date.now(); // unique per player
+  const saved = progress.getCompletionCode();
+  if (saved) return saved;
+
+  const epoch = Date.now();
   const input = finalWord.toUpperCase() + epoch + CONFIG.SECRET_SALT;
   const hash = await sha256(input);
-  return hash.slice(0, CONFIG.CODE_LENGTH);
-}
+  const code = hash.slice(0, CONFIG.CODE_LENGTH);
 
+  progress.setCompletionCode(code);
+  progress.setCompleted();
+
+  return code;
+}
