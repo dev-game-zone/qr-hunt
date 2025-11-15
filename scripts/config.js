@@ -11,7 +11,10 @@ const CONFIG = {
     "QR005": "L",
     "QR006": "I",
     "QR007": "O",
-    "QR008": "N"
+    "QR003": "N",
+    "QR008": "*",
+    "QR009": "*",
+    "QR010": "*"
   },
   HIDDEN_PHRASE: "DANDELION",
   ADMIN_SALT: "YOUR_ADMIN_SALT",
