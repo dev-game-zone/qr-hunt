@@ -67,23 +67,41 @@
       if (gifPlaying) return;
       gifPlaying = true;
 
-      detectiveGif.style.left = detective.style.left;
-      detectiveGif.style.top = detective.style.top;
-      detectiveGif.style.transform = direction === 1 ? 'scaleX(-1)' : 'scaleX(1)';
-      detectiveGif.style.height = detective.style.height;
+      // Capture the exact position before switching
+      const lottieRect = detective.getBoundingClientRect();
+      
+      // Set height to match, width to auto to preserve aspect ratio
+      detectiveGif.style.height = `${lottieRect.height}px`;
       detectiveGif.style.width = 'auto';
+      
+      // Match the transform/flip direction
+      detectiveGif.style.transform = direction === 1 ? 'scaleX(-1)' : 'scaleX(1)';
 
+      // Swap visibility
       detective.style.visibility = 'hidden';
       detectiveGif.style.display = 'block';
 
+      // Now get the actual rendered position of the GIF after it calculates its width
+      const gifRect = detectiveGif.getBoundingClientRect();
+      
+      // Center the GIF on the Lottie's position
+      const offsetX = (lottieRect.width - gifRect.width) / 2;
+      const offsetY = (lottieRect.height - gifRect.height) / 2;
+      detectiveGif.style.left = `${lottieRect.left + offsetX}px`;
+      detectiveGif.style.top = `${lottieRect.top + offsetY}px`;
+
       setTimeout(() => {
-        const gifRect = detectiveGif.getBoundingClientRect();
+        // Hide GIF and restore Lottie at the same position where it was
         detectiveGif.style.display = 'none';
         detective.style.visibility = 'visible';
-        detective.style.left = `${gifRect.left}px`;
-        detective.style.top = `${gifRect.top}px`;
-        x = gifRect.left;
-        y = gifRect.top;
+        
+        // Keep the position where the Lottie was (stored in lottieRect)
+        // The x and y were already correct before the GIF played
+        detective.style.left = `${lottieRect.left}px`;
+        detective.style.top = `${lottieRect.top}px`;
+        x = lottieRect.left;
+        y = lottieRect.top;
+        
         gifPlaying = false;
       }, 1000);
     }
