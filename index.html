@@ -10,6 +10,15 @@
     /* Show typed input in uppercase but keep placeholder in Camel Case */
     #code { text-transform: uppercase; }
     #code::placeholder { text-transform: none; color: #999; }
+
+    /* GIF overlay */
+    #detective-gif {
+      position: fixed;
+      display: none;
+      pointer-events: none;
+      z-index: 30;
+      transform-origin: center center;
+    }
   </style>
 </head>
 
@@ -17,11 +26,16 @@
 
   <!-- Detective Lottie Animation -->
   <div id="detective-animation"></div>
+  <!-- Detective GIF overlay -->
+  <img id="detective-gif" src="pages/images/detective_pop.gif">
 
   <!-- Lottie Player -->
   <script src="https://unpkg.com/lottie-web/build/player/lottie.min.js"></script>
   <script>
     const detective = document.getElementById('detective-animation');
+    const detectiveGif = document.getElementById('detective-gif');
+
+    // Load Lottie animation
     lottie.loadAnimation({
       container: detective,
       renderer: 'svg',
@@ -30,12 +44,14 @@
       path: 'pages/images/detective_search.json'
     });
 
-    // Mobile-friendly scaling
-    const detectiveWidth = Math.min(180, window.innerWidth * 0.20); // 15% of viewport width max
+    // Mobile-friendly sizing
+    let detectiveWidth = Math.min(180, window.innerWidth * 0.20);
     detective.style.width = detectiveWidth + 'px';
     detective.style.height = detectiveWidth + 'px';
+    detectiveGif.style.width = detectiveWidth + 'px';
+    detectiveGif.style.height = detectiveWidth + 'px';
 
-    const speed = window.innerWidth * 0.02; // px/frame speed proportional to screen width
+    const speed = window.innerWidth * 0.02; // proportional speed
     let direction = -1; // -1 = right-to-left start
     let x = -detectiveWidth;
 
@@ -48,45 +64,89 @@
     detective.style.left = `${x}px`;
     detective.style.transform = 'rotateY(180deg)'; // face right initially
 
+    let gifPlaying = false;
+
+    // Function to play GIF at current detective position
+    function playGifAtCurrentPosition() {
+      if (gifPlaying) return;
+      gifPlaying = true;
+
+      // Position GIF overlay exactly over detective
+      detectiveGif.style.left = detective.style.left;
+      detectiveGif.style.top = detective.style.top;
+      detectiveGif.style.width = detective.style.width;
+      detectiveGif.style.height = detective.style.height;
+
+      // Flip GIF according to direction
+      detectiveGif.style.transform = direction === 1 ? 'rotateY(180deg)' : 'rotateY(0deg)';
+
+      // Hide Lottie temporarily
+      detective.style.visibility = 'hidden';
+      detectiveGif.style.display = 'block';
+
+      // Save current movement state
+      const savedX = x;
+      const savedY = y;
+      const savedDirection = direction;
+
+      // Duration of GIF playback
+      setTimeout(() => {
+        detectiveGif.style.display = 'none';
+        detective.style.visibility = 'visible';
+        x = savedX;
+        y = savedY;
+        direction = savedDirection;
+        gifPlaying = false;
+      }, 1500); // adjust to your GIF length
+    }
+
     function animate() {
-      const delta = speed / 90; // approximate px/frame
+      if (gifPlaying) {
+        requestAnimationFrame(animate);
+        return;
+      }
+
+      const delta = speed / 90;
       x += delta * direction;
       detective.style.left = `${x}px`;
 
       // subtle vertical sway
-      const sway = Math.sin(x / 50) * 5; // ±5px up/down
+      const sway = Math.sin(x / 50) * 5;
       detective.style.top = `${y + sway}px`;
 
       // Offscreen → teleport & randomize y with slight lean
       if (direction === 1 && x > window.innerWidth) {
         direction = -1;
-        x = window.innerWidth; // teleport offscreen right
+        x = window.innerWidth;
         y = minY + Math.random() * (maxY - minY);
         detective.style.top = `${y}px`;
-        detective.style.transform = 'rotateY(0deg) rotateZ(-5deg)'; // face left
+        detective.style.transform = 'rotateY(0deg) rotateZ(-5deg)';
       }
-
       if (direction === -1 && x < -detectiveWidth) {
         direction = 1;
-        x = -detectiveWidth; // teleport offscreen left
+        x = -detectiveWidth;
         y = minY + Math.random() * (maxY - minY);
         detective.style.top = `${y}px`;
-        detective.style.transform = 'rotateY(180deg) rotateZ(5deg)'; // face right
+        detective.style.transform = 'rotateY(180deg) rotateZ(5deg)';
       }
+
+      // Rare random GIF trigger (~0.05% per frame)
+      if (Math.random() < 0.0005) playGifAtCurrentPosition();
 
       requestAnimationFrame(animate);
     }
 
     requestAnimationFrame(animate);
 
-    // Optional: adjust on resize
+    // Adjust size on resize
     window.addEventListener('resize', () => {
-      const newWidth = Math.min(120, window.innerWidth * 0.15);
-      detective.style.width = newWidth + 'px';
-      detective.style.height = newWidth + 'px';
+      detectiveWidth = Math.min(180, window.innerWidth * 0.20);
+      detective.style.width = detectiveWidth + 'px';
+      detective.style.height = detectiveWidth + 'px';
+      detectiveGif.style.width = detectiveWidth + 'px';
+      detectiveGif.style.height = detectiveWidth + 'px';
     });
   </script>
-
 
   <main>
     <h2>Enter Today’s Access Code</h2>
