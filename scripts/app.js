@@ -73,11 +73,36 @@ const progress = {
   },
   clearCompletionCode() {
     localStorage.removeItem("completion_code");
+  },
+
+  // Ensures legacy and current states stay consistent
+  ensureConsistency() {
+    const completed = this.isCompleted();
+    const code = this.getCompletionCode();
+
+    // Case 1: completed=yes but no code stored (legacy)
+    if (completed && !code) {
+      // Generate a synthetic code so the admin can still verify
+      const synthetic = "LEGACY-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+      this.setCompletionCode(synthetic);
+    }
+
+    // Case 2: code exists but completed flag is missing (rare but could happen)
+    if (!completed && code) {
+      this.setCompleted();
+    }
   }
 };
 
+// Run consistency check once on script load
+progress.ensureConsistency();
+
+
 // Generate completion code and lock progress
 async function generateCompletionCode(finalWord) {
+  // Re-check consistency in case older users hit this function
+  progress.ensureConsistency();
+
   const saved = progress.getCompletionCode();
   if (saved) return saved;
 
