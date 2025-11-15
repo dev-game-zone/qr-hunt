@@ -2,29 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- ✅ fixes mobile scaling -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Scavenger Hunt – Scan</title>
   <link rel="stylesheet" href="../../styles/styles.css">
-  <link rel="icon" type="image/png" href="../../favicon.png">
   <style>
-    /* Prevent reader overflow on mobile */
     #reader-container {
       display: flex;
       justify-content: center;
       align-items: center;
       margin: 20px auto;
-      max-width: 90vw; /* ✅ limits to viewport width */
+      max-width: 90vw;
     }
 
     #reader {
       width: 100%;
-      max-width: 320px; /* ✅ consistent with design */
+      max-width: 320px;
       border-radius: 10px;
       overflow: hidden;
     }
 
     main {
-      max-width: 500px; /* ✅ same as other pages */
+      max-width: 500px;
       margin: 0 auto;
       padding: 16px;
       text-align: center;
@@ -38,6 +36,12 @@
         max-width: 280px;
       }
     }
+
+    .locked-msg {
+      margin-top: 12px;
+      font-weight: bold;
+      color: #c00;
+    }
   </style>
 </head>
 <body class="scan">
@@ -49,6 +53,7 @@
   </div>
 
   <p id="msg"></p>
+  <p id="locked-msg" class="locked-msg" style="display:none;">Hunt completed — scanning disabled.</p>
 
   <div class="button-group">
     <button id="retry" style="display:none;">Retry Camera</button>
@@ -56,7 +61,6 @@
   </div>
 </main>
 
-<!-- Scripts -->
 <script src="../../scripts/config.js"></script>
 <script src="../../scripts/app.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -66,6 +70,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const backBtn = document.getElementById("back");
   const retryBtn = document.getElementById("retry");
   const readerContainer = document.getElementById("reader-container");
+  const lockedMsg = document.getElementById("locked-msg");
 
   // Access guard
   if (sessionStorage.getItem("access") !== "granted") {
@@ -73,7 +78,14 @@ window.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // Camera error visual
+  // If hunt completed, lock scanning
+  if (progress.isCompleted()) {
+    lockedMsg.style.display = "block";
+    readerContainer.style.display = "none";
+    retryBtn.style.display = "none";
+    return;
+  }
+
   function showCameraError() {
     readerContainer.innerHTML = `
       <div style="text-align:center;">
@@ -89,7 +101,6 @@ window.addEventListener("DOMContentLoaded", () => {
     retryBtn.style.display = "inline-block";
   }
 
-  // Initialize QR reader
   try {
     const reader = new Html5Qrcode("reader");
     reader.start(
@@ -100,10 +111,9 @@ window.addEventListener("DOMContentLoaded", () => {
         const letter = mapping[decodedText];
         if (letter) {
           store.add(letter);
-          msg.textContent = `✅ Found letter: ${letter}`;
+          msg.textContent = `✓ Found letter: ${letter}`;
           msg.className = "success";
 
-          // short pause, then return to game
           setTimeout(() => {
             window.location.href = CONFIG.BASE_PATH + "pages/game/game.html";
           }, 1500);
