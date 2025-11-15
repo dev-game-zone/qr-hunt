@@ -5,22 +5,15 @@
   <title>Scavenger Hunt – Registration</title>
   <link rel="stylesheet" href="../../styles/styles.css">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    /* Show typed input in uppercase but keep placeholder in Camel Case */
-    #playerCode { text-transform: uppercase; }
-    #playerCode::placeholder { text-transform: none; color: #999; }
-  </style>
 </head>
 <body class="register">
 <main>
   <h2>Player Registration</h2>
   <p>Enter your name and your unique code. Admin verification required.</p>
 
-  <div class="admin-input-row">
-    <input type="text" id="playerName" placeholder="Your Name">
-    <input type="text" id="playerCode" placeholder="Your Code">
-    <input type="text" id="adminPin" placeholder="Admin PIN">
-  </div>
+  <input type="text" id="playerName" placeholder="Your Name" autocomplete="off">
+  <input type="text" id="playerCode" placeholder="Your Code" autocomplete="off">
+  <input type="password" id="adminPin" placeholder="Admin PIN" autocomplete="off">
 
   <div class="button-group">
     <button id="registerBtn">Register</button>
