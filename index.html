@@ -3,14 +3,41 @@
 <head>
   <meta charset="utf-8">
   <title>Scavenger Hunt – Access</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="styles/styles.css">
   <link rel="icon" type="image/png" href="./favicon.png">
 </head>
-<body>
+
+<body class="home"> <!-- apply a page class like other pages -->
+<!-- Detective Lottie Animation -->
+<div id="detective-animation"></div>
+
+<!-- Lottie Player -->
+<script src="https://unpkg.com/lottie-web/build/player/lottie.min.js"></script>
+
+<script>
+  lottie.loadAnimation({
+    container: document.getElementById('detective-animation'),
+    renderer: 'svg',
+    loop: true,
+    autoplay: true,
+    path: 'pages/images/detective_search.json'  // updated filename
+  });
+</script>
+
 <main>
-  <h2>Enter today’s access code</h2>
-  <input id="code" type="text" autocomplete="off" autofocus>
-  <button id="enter">Enter</button>
+  <h2>Enter Today’s Access Code</h2>
+  <p>Please enter the daily access code to begin the scavenger hunt.</p>
+
+  <!-- match registration layout: inputs grouped + buttons inside .button-group -->
+  <div class="admin-input-row" style="max-width:400px; margin:0 auto;">
+    <input id="code" type="text" placeholder="Access Code" autocomplete="off" autofocus>
+  </div>
+
+  <div class="button-group">
+    <button id="enter">Enter</button>
+  </div>
+
   <p id="msg"></p>
 </main>
 
@@ -28,19 +55,17 @@ if (typeof sha256 === "undefined") {
 }
 </script>
 
-<!-- ✅ Load scripts in correct order, all at the bottom -->
+<!-- Scripts -->
 <script src="scripts/config.js"></script>
 <script src="scripts/app.js"></script>
 <script src="scripts/qrcode.min.js"></script>
 
-<!-- 🚀 Your page logic (runs *after* scripts are ready) -->
 <script>
 window.addEventListener("DOMContentLoaded", () => {
   const codeInput = document.getElementById("code");
   const msg = document.getElementById("msg");
   const enterBtn = document.getElementById("enter");
 
-  // Redirect if already accessed
   if (sessionStorage.getItem("access") === "granted") {
     window.location.href = "pages/game/game.html";
     return;
@@ -63,5 +88,6 @@ window.addEventListener("DOMContentLoaded", () => {
   };
 });
 </script>
+
 </body>
 </html>

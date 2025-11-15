@@ -127,6 +127,13 @@ body.register input[type="text"] {
   background-color: #117a8b;
 }
 
+.home .button-group button {
+  background-color: #17a2b8;
+}
+.home .button-group button:hover {
+  background-color: #117a8b;
+}
+
 /* Admin-specific buttons */
 body.admin .button-group button {
   background-color: #007bff;
@@ -492,3 +499,26 @@ body.admin .tab-button { min-width: 140px; }
 #ticket-list {
   display: none;
 }
+
+#detective-animation {
+  position: fixed;
+  width: 120px;
+  height: 120px;
+  top: 30%;
+  left: 10%;
+  z-index: 20;
+  pointer-events: none;
+  opacity: 0.9;
+
+  animation: wanderDetective 16s ease-in-out infinite;
+}
+
+@keyframes wanderDetective {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  20%  { transform: translate(25vw, -10vh) rotate(-6deg); }
+  40%  { transform: translate(40vw, 10vh) rotate(4deg); }
+  60%  { transform: translate(10vw, 20vh) rotate(-4deg); }
+  80%  { transform: translate(-10vw, -10vh) rotate(5deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
