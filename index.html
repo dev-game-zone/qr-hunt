@@ -6,87 +6,130 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="styles/styles.css">
   <link rel="icon" type="image/png" href="./favicon.png">
+
+  <style>
+    /* Detective animation styling */
+    #detective-animation {
+      position: fixed;
+      width: 120px;
+      height: 120px;
+      top: 0;
+      left: 0;
+      z-index: 20;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 1s ease, transform 1s ease;
+    }
+  </style>
 </head>
 
-<body class="home"> <!-- apply a page class like other pages -->
-<!-- Detective Lottie Animation -->
-<div id="detective-animation"></div>
+<body class="home">
 
-<!-- Lottie Player -->
-<script src="https://unpkg.com/lottie-web/build/player/lottie.min.js"></script>
+  <!-- Detective Lottie Animation -->
+  <div id="detective-animation"></div>
 
-<script>
-  lottie.loadAnimation({
-    container: document.getElementById('detective-animation'),
-    renderer: 'svg',
-    loop: true,
-    autoplay: true,
-    path: 'pages/images/detective_search.json'
-  });
-</script>
+  <!-- Lottie Player -->
+  <script src="https://unpkg.com/lottie-web/build/player/lottie.min.js"></script>
+  <script>
+    const detective = document.getElementById('detective-animation');
 
-<main>
-  <h2>Enter Today’s Access Code</h2>
-  <p>Please enter the daily access code to begin the scavenger hunt.</p>
+    // Load Lottie animation
+    lottie.loadAnimation({
+      container: detective,
+      renderer: 'svg',
+      loop: true,
+      autoplay: true,
+      path: 'pages/images/detective_search.json'
+    });
 
-  <!-- match registration layout: inputs grouped + buttons inside .button-group -->
-  <div class="admin-input-row" style="max-width:400px; margin:0 auto;">
-    <input id="code" type="text" placeholder="Access Code" autocomplete="off" autofocus>
-  </div>
+    function moveDetective() {
+      // Step 1: fade out
+      detective.style.opacity = 0;
 
-  <div class="button-group">
-    <button id="enter">Enter</button>
-  </div>
+      // Step 2: wait for fade out to complete, then teleport
+      setTimeout(() => {
+        const vw = window.innerWidth - 120; // keep within viewport
+        const vh = window.innerHeight / 2 - 50 //- 120;
+        const x = Math.random() * vw;
+        const y = Math.random() * vh + window.innerHeight / 2 - 50;
 
-  <p id="msg"></p>
-</main>
+        detective.style.transform = `translate(${x}px, ${y}px)`;
 
-<!-- 🧩 Safe fallback: define sha256 if app.js hasn't loaded yet -->
-<script>
-if (typeof sha256 === "undefined") {
-  async function sha256(text) {
-    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-    return Array.from(new Uint8Array(buf))
-      .map(b => b.toString(16).padStart(2, "0"))
-      .join("")
-      .toUpperCase();
-  }
-  console.log("⚙️ sha256 fallback loaded");
-}
-</script>
-
-<!-- Scripts -->
-<script src="scripts/config.js"></script>
-<script src="scripts/app.js"></script>
-
-<script>
-window.addEventListener("DOMContentLoaded", () => {
-  const codeInput = document.getElementById("code");
-  const msg = document.getElementById("msg");
-  const enterBtn = document.getElementById("enter");
-
-  if (sessionStorage.getItem("access") === "granted") {
-    window.location.href = "pages/game/game.html";
-    return;
-  }
-
-  enterBtn.onclick = async () => {
-    try {
-      const code = codeInput.value.trim();
-      const ok = await verifyAccessCode(code);
-      if (ok) {
-        sessionStorage.setItem("access", "granted");
-        window.location.href = "pages/game/game.html";
-      } else {
-        msg.textContent = "❌ Incorrect code. Try again.";
-      }
-    } catch (err) {
-      console.error(err);
-      msg.textContent = "⚠️ There was a problem verifying the code.";
+        // Step 3: fade in
+        detective.style.opacity = 0.9;
+      }, 1000); // matches fade-out duration
     }
-  };
-});
-</script>
+
+    // Initial move
+    moveDetective();
+
+    // Repeat every 4–6 seconds
+    setInterval(moveDetective, 4000 + Math.random() * 2000);
+  </script>
+
+
+  <main>
+    <h2>Enter Today’s Access Code</h2>
+    <p>Please enter the daily access code to begin the scavenger hunt.</p>
+
+    <div class="admin-input-row" style="max-width:400px; margin:0 auto;">
+      <input id="code" type="text" placeholder="Access Code" autocomplete="off" autofocus>
+    </div>
+
+    <div class="button-group">
+      <button id="enter">Enter</button>
+    </div>
+
+    <p id="msg"></p>
+  </main>
+
+  <!-- 🧩 Safe fallback: define sha256 if app.js hasn't loaded yet -->
+  <script>
+    if (typeof sha256 === "undefined") {
+      async function sha256(text) {
+        const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+        return Array.from(new Uint8Array(buf))
+          .map(b => b.toString(16).padStart(2, "0"))
+          .join("")
+          .toUpperCase();
+      }
+      console.log("⚙️ sha256 fallback loaded");
+    }
+  </script>
+
+  <!-- Scripts -->
+  <script src="scripts/config.js"></script>
+  <script src="scripts/app.js"></script>
+
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      const codeInput = document.getElementById("code");
+      const msg = document.getElementById("msg");
+      const enterBtn = document.getElementById("enter");
+
+      // Redirect if access already granted
+      if (sessionStorage.getItem("access") === "granted") {
+        window.location.href = "pages/game/game.html";
+        return;
+      }
+
+      enterBtn.onclick = async () => {
+        try {
+          const code = codeInput.value.trim();
+          const ok = await verifyAccessCode(code);
+          if (ok) {
+            sessionStorage.setItem("access", "granted");
+            window.location.href = "pages/game/game.html";
+          } else {
+            msg.textContent = "❌ Incorrect code. Try again.";
+          }
+        } catch (err) {
+          console.error(err);
+          msg.textContent = "⚠️ There was a problem verifying the code.";
+        }
+      };
+    });
+  </script>
 
 </body>
 </html>

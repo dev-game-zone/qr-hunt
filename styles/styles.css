@@ -504,13 +504,13 @@ body.admin .tab-button { min-width: 140px; }
   position: fixed;
   width: 120px;
   height: 120px;
-  top: 30%;
-  left: 10%;
+  top: 0;
+  left: 0;
   z-index: 20;
   pointer-events: none;
-  opacity: 0.9;
-
-  animation: wanderDetective 16s ease-in-out infinite;
+  opacity: 0;
+  transition: opacity 1s ease; /* ONLY opacity transitions */
+  will-change: opacity; /* hint to browser for smooth fade */
 }
 
 @keyframes wanderDetective {
