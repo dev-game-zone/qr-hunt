@@ -6,20 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="styles/styles.css">
   <link rel="icon" type="image/png" href="./favicon.png">
-
   <style>
-    /* Detective animation styling */
-    #detective-animation {
-      position: fixed;
-      width: 120px;
-      height: 120px;
-      top: 0;
-      left: 0;
-      z-index: 20;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 1s ease, transform 1s ease;
-    }
+    /* Show typed input in uppercase but keep placeholder in Camel Case */
+    #code { text-transform: uppercase; }
+    #code::placeholder { text-transform: none; color: #999; }
   </style>
 </head>
 
@@ -32,8 +22,6 @@
   <script src="https://unpkg.com/lottie-web/build/player/lottie.min.js"></script>
   <script>
     const detective = document.getElementById('detective-animation');
-
-    // Load Lottie animation
     lottie.loadAnimation({
       container: detective,
       renderer: 'svg',
@@ -42,31 +30,49 @@
       path: 'pages/images/detective_search.json'
     });
 
-    function moveDetective() {
-      // Step 1: fade out
-      detective.style.opacity = 0;
+    const speed = 25; // horizontal px/sec
+    let direction = -1; // -1 = right-to-left start
+    const detectiveWidth = 120;
+    let x = -detectiveWidth; // start offscreen left
 
-      // Step 2: wait for fade out to complete, then teleport
-      setTimeout(() => {
-        const vw = window.innerWidth - 120; // keep within viewport
-        const vh = window.innerHeight / 2 - 50 //- 120;
-        const x = Math.random() * vw;
-        const y = Math.random() * vh + window.innerHeight / 2 - 50;
+    const minY = window.innerHeight * 0.55;
+    const maxY = window.innerHeight * 0.7;
+    let y = minY + Math.random() * (maxY - minY);
 
-        detective.style.transform = `translate(${x}px, ${y}px)`;
+    detective.style.position = 'fixed';
+    detective.style.top = `${y}px`;
+    detective.style.left = `${x}px`;
+    detective.style.transform = 'rotateY(180deg)'; // face right initially
 
-        // Step 3: fade in
-        detective.style.opacity = 0.9;
-      }, 1000); // matches fade-out duration
+    function animate() {
+      const delta = speed / 60; // px/frame
+      x += delta * direction;
+
+      detective.style.left = `${x}px`;
+      detective.style.top = `${y}px`;
+
+      // Offscreen → teleport & randomize y with slight tilt
+      if (direction === 1 && x > window.innerWidth) {
+        direction = -1;
+        x = window.innerWidth; // teleport offscreen right
+        y = minY + Math.random() * (maxY - minY);
+        detective.style.top = `${y}px`;
+        detective.style.transform = 'rotateY(0deg) rotateZ(-5deg)'; // face left with slight lean
+      }
+
+      if (direction === -1 && x < -detectiveWidth) {
+        direction = 1;
+        x = -detectiveWidth; // teleport offscreen left
+        y = minY + Math.random() * (maxY - minY);
+        detective.style.top = `${y}px`;
+        detective.style.transform = 'rotateY(180deg) rotateZ(5deg)'; // face right with slight lean
+      }
+
+      requestAnimationFrame(animate);
     }
 
-    // Initial move
-    moveDetective();
-
-    // Repeat every 4–6 seconds
-    setInterval(moveDetective, 4000 + Math.random() * 2000);
+    requestAnimationFrame(animate);
   </script>
-
 
   <main>
     <h2>Enter Today’s Access Code</h2>
@@ -83,7 +89,7 @@
     <p id="msg"></p>
   </main>
 
-  <!-- 🧩 Safe fallback: define sha256 if app.js hasn't loaded yet -->
+  <!-- 🧩 SHA256 fallback -->
   <script>
     if (typeof sha256 === "undefined") {
       async function sha256(text) {
@@ -97,7 +103,7 @@
     }
   </script>
 
-  <!-- Scripts -->
+  <!-- App Scripts -->
   <script src="scripts/config.js"></script>
   <script src="scripts/app.js"></script>
 
@@ -107,7 +113,6 @@
       const msg = document.getElementById("msg");
       const enterBtn = document.getElementById("enter");
 
-      // Redirect if access already granted
       if (sessionStorage.getItem("access") === "granted") {
         window.location.href = "pages/game/game.html";
         return;
