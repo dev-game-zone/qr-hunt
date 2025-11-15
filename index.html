@@ -17,8 +17,12 @@
       display: none;
       pointer-events: none;
       z-index: 30;
+      
+      /* Match the Lottie anchor point → no skipping */
       transform-origin: center center;
+      object-fit: fill;
     }
+
   </style>
 </head>
 
@@ -71,33 +75,42 @@
       if (gifPlaying) return;
       gifPlaying = true;
 
-      // Position GIF overlay exactly over detective
+      // Position GIF exactly where the detective currently is
       detectiveGif.style.left = detective.style.left;
       detectiveGif.style.top = detective.style.top;
 
-      // Flip GIF according to direction and preserve size
+      // Flip GIF according to direction
       detectiveGif.style.transform = direction === 1 ? 'scaleX(-1)' : 'scaleX(1)';
-      detectiveGif.style.width = detective.style.width;
-      detectiveGif.style.height = detective.style.height;
 
-      // Hide Lottie temporarily
+      // Match width (height auto maintains proportions)
+      // detectiveGif.style.width = detective.style.width;
+      // detectiveGif.style.height = 'auto';
+      detectiveGif.style.height = detective.style.height;
+      detectiveGif.style.width = 'auto';
+
+      // Hide the Lottie, show GIF
       detective.style.visibility = 'hidden';
       detectiveGif.style.display = 'block';
 
-      // Save current movement state
-      const savedX = x;
-      const savedY = y;
-      const savedDirection = direction;
-
       // Duration of GIF playback
       setTimeout(() => {
+        // 🔥 SAFELY measure GIF position while still visible
+        const gifRect = detectiveGif.getBoundingClientRect();
+
+        // Hide GIF, show Lottie again
         detectiveGif.style.display = 'none';
         detective.style.visibility = 'visible';
-        x = savedX;
-        y = savedY;
-        direction = savedDirection;
+
+        // 🔥 Move Lottie to EXACT gif location
+        detective.style.left = `${gifRect.left}px`;
+        detective.style.top = `${gifRect.top}px`;
+
+        // 🔥 Update state so animation continues smoothly
+        x = gifRect.left;
+        y = gifRect.top;
+
         gifPlaying = false;
-      }, 1000);
+      }, 1000); // match your GIF duration
     }
 
     function animate() {
@@ -106,7 +119,7 @@
         return;
       }
 
-      const delta = speed / 90;
+      const delta = speed / 60;
       x += delta * direction;
       detective.style.left = `${x}px`;
 
