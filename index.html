@@ -7,22 +7,51 @@
   <link rel="stylesheet" href="styles/styles.css">
   <link rel="icon" type="image/png" href="./favicon.png">
   <style>
-    /* Show typed input in uppercase but keep placeholder in Camel Case */
-    #code { text-transform: uppercase; }
-    #code::placeholder { text-transform: none; color: #999; }
+    /* ================================
+       Access Code input
+    ================================= */
+    #code {
+      text-transform: uppercase;      /* uppercase input */
+      text-align: center;             /* center text */
+      width: 100%;                    /* fill container width */
+      padding: 12px;                  /* padding */
+      font-size: 1.2rem;              /* readable font */
+      margin: 5px 0 15px 0;           /* spacing */
+      border-radius: 25px;            /* rounded pill-style */
+      border: 1px solid #ccc;         /* subtle border */
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); /* subtle inset shadow */
+      transition: all 0.3s ease;      /* smooth focus */
+    }
 
-    /* GIF overlay */
+    #code::placeholder {
+      text-transform: none;
+      color: #999;
+    }
+
+    #code:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 6px rgba(0, 123, 255, 0.3);
+    }
+
+    @media (max-width: 480px) {
+      #code {
+        font-size: 1rem;
+        padding: 10px;
+      }
+    }
+
+    /* ================================
+       GIF overlay
+    ================================= */
     #detective-gif {
       position: fixed;
       display: none;
       pointer-events: none;
       z-index: 30;
-      
-      /* Match the Lottie anchor point → no skipping */
       transform-origin: center center;
       object-fit: fill;
     }
-
   </style>
 </head>
 
@@ -39,7 +68,6 @@
     const detective = document.getElementById('detective-animation');
     const detectiveGif = document.getElementById('detective-gif');
 
-    // Load Lottie animation
     lottie.loadAnimation({
       container: detective,
       renderer: 'svg',
@@ -48,15 +76,14 @@
       path: 'pages/images/detective_search.json'
     });
 
-    // Mobile-friendly sizing
     let detectiveWidth = Math.min(180, window.innerWidth * 0.20);
     detective.style.width = detectiveWidth + 'px';
     detective.style.height = detectiveWidth + 'px';
     detectiveGif.style.width = detectiveWidth + 'px';
     detectiveGif.style.height = detectiveWidth + 'px';
 
-    const speed = window.innerWidth * 0.02; // proportional speed
-    let direction = -1; // -1 = right-to-left start
+    const speed = window.innerWidth * 0.02;
+    let direction = -1;
     let x = -detectiveWidth;
 
     const minY = window.innerHeight * 0.55;
@@ -66,51 +93,33 @@
     detective.style.position = 'fixed';
     detective.style.top = `${y}px`;
     detective.style.left = `${x}px`;
-    detective.style.transform = 'rotateY(180deg)'; // face right initially
+    detective.style.transform = 'rotateY(180deg)';
 
     let gifPlaying = false;
 
-    // Function to play GIF at current detective position
     function playGifAtCurrentPosition() {
       if (gifPlaying) return;
       gifPlaying = true;
 
-      // Position GIF exactly where the detective currently is
       detectiveGif.style.left = detective.style.left;
       detectiveGif.style.top = detective.style.top;
-
-      // Flip GIF according to direction
       detectiveGif.style.transform = direction === 1 ? 'scaleX(-1)' : 'scaleX(1)';
-
-      // Match width (height auto maintains proportions)
-      // detectiveGif.style.width = detective.style.width;
-      // detectiveGif.style.height = 'auto';
       detectiveGif.style.height = detective.style.height;
       detectiveGif.style.width = 'auto';
 
-      // Hide the Lottie, show GIF
       detective.style.visibility = 'hidden';
       detectiveGif.style.display = 'block';
 
-      // Duration of GIF playback
       setTimeout(() => {
-        // 🔥 SAFELY measure GIF position while still visible
         const gifRect = detectiveGif.getBoundingClientRect();
-
-        // Hide GIF, show Lottie again
         detectiveGif.style.display = 'none';
         detective.style.visibility = 'visible';
-
-        // 🔥 Move Lottie to EXACT gif location
         detective.style.left = `${gifRect.left}px`;
         detective.style.top = `${gifRect.top}px`;
-
-        // 🔥 Update state so animation continues smoothly
         x = gifRect.left;
         y = gifRect.top;
-
         gifPlaying = false;
-      }, 1000); // match your GIF duration
+      }, 1000);
     }
 
     function animate() {
@@ -119,15 +128,13 @@
         return;
       }
 
-      const delta = speed / 60;
+      const delta = speed / 80;
       x += delta * direction;
       detective.style.left = `${x}px`;
 
-      // subtle vertical sway
       const sway = Math.sin(x / 50) * 5;
       detective.style.top = `${y + sway}px`;
 
-      // Offscreen → teleport & randomize y with slight lean
       if (direction === 1 && x > window.innerWidth) {
         direction = -1;
         x = window.innerWidth;
@@ -143,7 +150,6 @@
         detective.style.transform = 'rotateY(180deg) rotateZ(5deg)';
       }
 
-      // Rare random GIF trigger (~0.05% per frame)
       if (Math.random() < 0.0005) playGifAtCurrentPosition();
 
       requestAnimationFrame(animate);
@@ -151,7 +157,6 @@
 
     requestAnimationFrame(animate);
 
-    // Adjust size on resize
     window.addEventListener('resize', () => {
       detectiveWidth = Math.min(180, window.innerWidth * 0.20);
       detective.style.width = detectiveWidth + 'px';
@@ -165,7 +170,7 @@
     <h2>Enter Today’s Access Code</h2>
     <p>Please enter the daily access code to begin the scavenger hunt.</p>
 
-    <div class="admin-input-row" style="max-width:400px; margin:0 auto;">
+    <div class="admin-input-row">
       <input id="code" type="text" placeholder="Access Code" autocomplete="off" autofocus>
     </div>
 
@@ -176,7 +181,6 @@
     <p id="msg"></p>
   </main>
 
-  <!-- 🧩 SHA256 fallback -->
   <script>
     if (typeof sha256 === "undefined") {
       async function sha256(text) {
@@ -190,7 +194,6 @@
     }
   </script>
 
-  <!-- App Scripts -->
   <script src="scripts/config.js"></script>
   <script src="scripts/app.js"></script>
 

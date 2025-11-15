@@ -43,6 +43,31 @@ input[type="text"] {
   }
 }
 
+.admin-input-row {
+  display: flex;
+  justify-content: center; /* centers child horizontally */
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 0; /* remove extra padding if any */
+  box-sizing: border-box;
+}
+
+#code {
+  text-transform: uppercase;
+  text-align: center;
+  width: 100%; /* fills container exactly */
+  max-width: 100%; /* prevent overflow */
+  padding: 12px;
+  font-size: 1.2rem;
+  border-radius: 25px;
+  border: 1px solid #ccc;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+  margin: 0; /* remove any default margins */
+}
+
+
 /* Admin-specific narrower inputs to avoid large layout stretching */
 body.admin input[type="text"] {
   width: 200px;
