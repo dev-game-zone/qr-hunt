@@ -68,10 +68,40 @@ body.admin #adminPin {
   50% { transform: scale(1.25); }
   100% { transform: scale(1); }
 }
+
+#countdown-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999;
+}
+
+.countdown-number {
+  position: absolute;
+  font-size: 8rem;
+  font-weight: 900;
+  color: white;
+  text-shadow: 0 0 25px rgba(0,0,0,0.5);
+  opacity: 0;
+  transform: scale(0.3);
+  transition: transform 0.9s ease, opacity 0.9s ease;
+}
+
 </style>
 </head>
 
 <body class="admin">
+<script>
+  if (sessionStorage.getItem("access") !== "granted") {
+    window.location.href = "../../index.html";
+  }
+</script>
 <main>
   <h2>Admin Panel</h2>
   <p>Secure access required to manage QR codes and run the Tombola.</p>
@@ -147,6 +177,9 @@ body.admin #adminPin {
 
 <!-- Confetti canvas -->
 <canvas id="confetti-canvas"></canvas>
+
+<!-- Countdown Overlay (must be outside any tabs!) -->
+<div id="countdown-overlay"></div>
 
 <!-- Scripts -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -472,21 +505,10 @@ window.addEventListener("DOMContentLoaded", () => {
     }, tickInterval);
 
     function startCountdown() {
-      let n = 5;
-      winnerMsg.textContent = `Revealing in ${n}...`;
-      const countdown = setInterval(() => {
-        n--;
-        if (n > 0) {
-          winnerMsg.textContent = `Revealing in ${n}...`;
-          orbs.forEach(o => o.classList.remove('suspense'));
-          const idx = Math.floor(Math.random() * orbs.length);
-          orbs[idx].classList.add('suspense');
-        } else {
-          clearInterval(countdown);
-          const winner = registeredCodes[Math.floor(Math.random() * registeredCodes.length)];
-          revealWinner(winner);
-        }
-      }, 1000);
+      dramaticCountdown(() => {
+        const winner = registeredCodes[Math.floor(Math.random() * registeredCodes.length)];
+        revealWinner(winner);
+      });
     }
 
     function revealWinner(winner) {
@@ -533,6 +555,56 @@ window.addEventListener("DOMContentLoaded", () => {
     winnerMsg.textContent = "";
   };
 });
+
+function dramaticCountdown(callback) {
+  const overlay = document.getElementById("countdown-overlay");
+  const numbers = [5, 4, 3, 2, 1];
+
+  let idx = 0;
+
+  function showNext() {
+    if (idx >= numbers.length) {
+      overlay.innerHTML = "";
+      callback();  // continue with winner reveal
+      return;
+    }
+
+    const num = numbers[idx];
+    const el = document.createElement("div");
+    el.className = "countdown-number";
+    el.textContent = num;
+
+    // Random start position
+    const startX = Math.random() * window.innerWidth;
+    const startY = Math.random() * window.innerHeight;
+    el.style.left = startX + "px";
+    el.style.top = startY + "px";
+
+    overlay.appendChild(el);
+
+    // Let browser place element THEN animate
+    requestAnimationFrame(() => {
+      el.style.opacity = "1";
+      el.style.transform = "translate(-50%, -50%) scale(1)";
+      el.style.left = "50%";
+      el.style.top = "50%";
+    });
+
+    // Remove and move to next number
+    setTimeout(() => {
+      el.style.opacity = "0";
+      el.style.transform += " scale(1.6)";
+
+      setTimeout(() => {
+        el.remove();
+        idx++;
+        showNext();
+      }, 700);
+    }, 900);
+  }
+
+  showNext();
+}
 </script>
 </body>
 </html>
