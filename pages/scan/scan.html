@@ -110,6 +110,20 @@ window.addEventListener("DOMContentLoaded", () => {
       async (decodedText) => {
         const mapping = CONFIG.LETTER_MAP || {};
         const letter = mapping[decodedText];
+        
+        // Check if it's a wildcard (asterisk)
+        if (letter === "*") {
+          msg.textContent = "🎉 You found a wildcard! (Not part of the quest)";
+          msg.className = "success";
+          
+          // Brief pause then continue scanning
+          setTimeout(() => {
+            msg.textContent = "";
+            msg.className = "";
+          }, 2000);
+          return;
+        }
+        
         if (letter) {
           store.add(letter);
           msg.textContent = `✓ Found letter: ${letter}`;

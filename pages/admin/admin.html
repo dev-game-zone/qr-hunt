@@ -9,10 +9,15 @@
 
 <style>
 /* ================================
-   Admin PIN input - center aligned
+   Admin PIN input - center aligned and uppercase
 ================================= */
 body.admin #adminPin {
   text-align: center;
+  text-transform: uppercase;
+}
+
+body.admin #adminPin::placeholder {
+  text-transform: none;
 }
 
 /* ================================
@@ -115,10 +120,12 @@ body.admin #adminPin {
     <p id="pinMsg"></p>
   </div>
 
+
   <!-- Tabs -->
   <div id="tabs" class="tabs">
     <div class="button-group">
       <button class="tab-button active" data-tab="generator-tab">QR Generator</button>
+      <button class="tab-button" data-tab="registration-tab">Registration</button>
       <button class="tab-button" data-tab="tombola-tab">Tombola Admin</button>
       <button class="tab-button" data-tab="orbview-tab">Tombola Draw</button>
     </div>
@@ -131,26 +138,29 @@ body.admin #adminPin {
       <p />
       <label for="qrLetter">Letter or Word:</label>
       <input id="qrLetter" type="text" placeholder="A">
-
       <div class="button-group">
         <button id="generate">Generate QR</button>
         <button id="download">Download QR</button>
       </div>
-
       <div id="qrcode"></div>
       <p id="msg"></p>
-
       <h3>Current Mappings (Session Only)</h3>
       <table id="mapTable">
         <thead><tr><th>QR Code</th><th>Letter</th></tr></thead>
         <tbody></tbody>
       </table>
-
       <div class="button-group">
         <button id="export">Export Mapping</button>
       </div>
       <p id="exportMsg"></p>
-      </div>
+    </div>
+
+    <!-- Registration Tab -->
+    <div id="registration-tab" class="tab-content" style="text-align:center;display:none;">
+      <h3>Player Registration</h3>
+      <iframe src="../registration/registration.html" title="Player Registration" width="420" height="520" style="border: 1px solid #ccc; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07);"></iframe>
+      <p style="font-size:0.95em;color:#888;margin-top:8px;">Players can register their code here.</p>
+    </div>
       <!-- ORB View Tab -->
       <div id="orbview-tab" class="tab-content" style="text-align:center;display:none;">
         <p style="color:#888;font-size:0.95em;">Live view of all registered ORBs.</p>
@@ -217,7 +227,13 @@ window.addEventListener("DOMContentLoaded", () => {
 
   let qrMap = {};
   // Normalize stored codes to uppercase trimmed values
-  let registeredCodes = (JSON.parse(localStorage.getItem("tombolaCodes") || "[]") || []).map(c => String(c).trim().toUpperCase());
+  // Handle both old string format and new {name, code} object format
+  let registeredCodes = (JSON.parse(localStorage.getItem("tombolaCodes") || "[]") || []).map(c => {
+    if (typeof c === 'string') {
+      return { name: c.trim().toUpperCase(), code: c.trim().toUpperCase() };
+    }
+    return { name: c.name, code: c.code.trim().toUpperCase() };
+  });
 
   renderTombolaCodes();
   notifyOrbView();
@@ -335,12 +351,13 @@ window.addEventListener("DOMContentLoaded", () => {
   // Tombola Draw
   // =====================
   function renderTombolaCodes() {
-    tombolaCodesInput.value = registeredCodes.join("\n");
+    tombolaCodesInput.value = registeredCodes.map(r => `${r.name} (${r.code})`).join("\n");
     ticketList.innerHTML = "";
-    registeredCodes.forEach(code => {
+    registeredCodes.forEach(reg => {
       const t = document.createElement("div");
       t.className = "ticket";
-      t.textContent = code;
+      t.textContent = reg.code;
+      t.title = reg.name; // Add tooltip
       ticketList.appendChild(t);
     });
     notifyOrbView();
@@ -359,10 +376,11 @@ window.addEventListener("DOMContentLoaded", () => {
     // or most of the viewport) so orbs don't all collapse to (0,0).
     const availableW = container.clientWidth || Math.min(window.innerWidth * 0.95, 900);
     const availableH = container.clientHeight || Math.min(window.innerHeight * 0.85, 900);
-    registeredCodes.forEach(code => {
+    registeredCodes.forEach(reg => {
       const orb = document.createElement("div");
       orb.className = "letter-box orb-dynamic";
-      orb.textContent = code;
+      orb.textContent = reg.code;
+      orb.title = reg.name; // Add tooltip with player name
       // random color (HSL) and readable text color
       const hue = Math.floor(Math.random() * 360);
       const sat = 60 + Math.floor(Math.random() * 21); // 60-80%
@@ -403,9 +421,9 @@ window.addEventListener("DOMContentLoaded", () => {
       // initialize transform translate to the position and set internal position state
       orb._x = left; orb._y = top;
       orb.style.transform = `translate3d(${left}px, ${top}px, 0)`;
-      // velocity state for smooth motion
-      orb._vx = (Math.random() - 0.5) * 0.6;
-      orb._vy = (Math.random() - 0.5) * 0.6;
+      // velocity state for smooth motion - increased range for more fluid movement
+      orb._vx = (Math.random() - 0.5) * 2.5;
+      orb._vy = (Math.random() - 0.5) * 2.5;
       placedOrbs.push({centerLeft: left + orbW / 2, centerTop: top + orbH / 2, w: orbW, h: orbH, el: orb});
     });
     // clear previous highlights
@@ -416,30 +434,54 @@ window.addEventListener("DOMContentLoaded", () => {
 
   function animateFloatingOrbs() {
     const orbs = Array.from(document.querySelectorAll("#floating-orbs .letter-box:not(.winner)"));
-    const dt = 1; // timestep scalar for damping
     orbs.forEach(orb => {
       // ignore orbs moved to fixed positioning (winners)
       if (getComputedStyle(orb).position === 'fixed') return;
-      // read base left/top (set during render) as bounds reference
-      const baseLeft = parseFloat(orb.style.left) || 0;
-      const baseTop = parseFloat(orb.style.top) || 0;
+      
       // fall back to overlay size if parent isn't laid out yet
       const parentW = orb.parentElement.clientWidth || Math.min(window.innerWidth * 0.95, 900);
       const parentH = orb.parentElement.clientHeight || Math.min(window.innerHeight * 0.85, 900);
-      // velocity nudges
-      orb._vx += (Math.random() - 0.5) * 0.2;
-      orb._vy += (Math.random() - 0.5) * 0.2;
-      // apply damping
-      orb._vx *= 0.95;
-      orb._vy *= 0.95;
+      
+      // Initialize velocity if not set
+      if (orb._vx === undefined) orb._vx = (Math.random() - 0.5) * 2.5;
+      if (orb._vy === undefined) orb._vy = (Math.random() - 0.5) * 2.5;
+      
+      // Add gentle random drift like floating balloons
+      orb._vx += (Math.random() - 0.5) * 0.5;
+      orb._vy += (Math.random() - 0.5) * 0.5;
+      
+      // Apply lighter damping for more fluid movement
+      orb._vx *= 0.985;
+      orb._vy *= 0.985;
+      
+      // Keep velocities within reasonable bounds
+      const maxSpeed = 3;
+      orb._vx = Math.max(-maxSpeed, Math.min(maxSpeed, orb._vx));
+      orb._vy = Math.max(-maxSpeed, Math.min(maxSpeed, orb._vy));
+      
       // compute new position
-      let x = (orb._x || baseLeft) + orb._vx * dt;
-      let y = (orb._y || baseTop) + orb._vy * dt;
+      let x = (orb._x || 0) + orb._vx;
+      let y = (orb._y || 0) + orb._vy;
       const orbW = orb.offsetWidth;
       const orbH = orb.offsetHeight;
-      // clamp to container bounds
-      x = Math.max(0, Math.min(parentW - orbW, x));
-      y = Math.max(0, Math.min(parentH - orbH, y));
+      
+      // Bounce off edges with some velocity reversal
+      if (x <= 0) {
+        x = 0;
+        orb._vx = Math.abs(orb._vx) * 0.7;
+      } else if (x >= parentW - orbW) {
+        x = parentW - orbW;
+        orb._vx = -Math.abs(orb._vx) * 0.7;
+      }
+      
+      if (y <= 0) {
+        y = 0;
+        orb._vy = Math.abs(orb._vy) * 0.7;
+      } else if (y >= parentH - orbH) {
+        y = parentH - orbH;
+        orb._vy = -Math.abs(orb._vy) * 0.7;
+      }
+      
       orb._x = x; orb._y = y;
       // apply transform - translate3d uses GPU compositing and avoids layout thrashing
       orb.style.transform = `translate3d(${x}px, ${y}px, 0)`;
@@ -458,7 +500,12 @@ window.addEventListener("DOMContentLoaded", () => {
   window.addEventListener('storage', (ev) => {
     if (ev.key === 'tombolaCodes') {
       try {
-        registeredCodes = (JSON.parse(ev.newValue || '[]') || []).map(c => String(c).trim().toUpperCase());
+        registeredCodes = (JSON.parse(ev.newValue || '[]') || []).map(c => {
+          if (typeof c === 'string') {
+            return { name: c.trim().toUpperCase(), code: c.trim().toUpperCase() };
+          }
+          return { name: c.name, code: c.code.trim().toUpperCase() };
+        });
       } catch (e) {
         registeredCodes = [];
       }
@@ -507,18 +554,18 @@ window.addEventListener("DOMContentLoaded", () => {
     function startCountdown() {
       dramaticCountdown(() => {
         const winner = registeredCodes[Math.floor(Math.random() * registeredCodes.length)];
-        revealWinner(winner);
+        revealWinner(winner.code, winner.name);
       });
     }
 
-    function revealWinner(winner) {
+    function revealWinner(winnerCode, winnerName) {
       // finalize
-      winnerMsg.textContent = `🎉 Winner: ${winner}`;
+      winnerMsg.textContent = `🎉 Winner: ${winnerName} (${winnerCode})`;
       ticketList.querySelectorAll('.ticket').forEach(t => t.classList.remove('winner'));
-      const winnerDiv = Array.from(ticketList.children).find(t => t.textContent === winner);
+      const winnerDiv = Array.from(ticketList.children).find(t => t.textContent === winnerCode);
       if (winnerDiv) winnerDiv.classList.add('winner');
 
-      const winnerOrb = Array.from(document.querySelectorAll('#floating-orbs .letter-box')).find(orb => orb.textContent === winner);
+      const winnerOrb = Array.from(document.querySelectorAll('#floating-orbs .letter-box')).find(orb => orb.textContent === winnerCode);
       if (winnerOrb) {
         document.querySelectorAll('#floating-orbs .letter-box.centered').forEach(o => o.classList.remove('centered'));
         winnerOrb.classList.add('winner', 'glow', 'centered');

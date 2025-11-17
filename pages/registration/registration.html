@@ -79,14 +79,14 @@ document.getElementById("registerBtn").onclick = async () => {
 
   // Normalize code (case-insensitive) and prevent duplicates
   const regs = JSON.parse(localStorage.getItem("tombolaCodes") || "[]");
-  const normalizedExisting = regs.map(r => String(r).trim().toUpperCase());
+  const normalizedExisting = regs.map(r => typeof r === 'string' ? r.trim().toUpperCase() : r.code.trim().toUpperCase());
   const codeNorm = code.trim().toUpperCase();
   if (normalizedExisting.includes(codeNorm)) {
     msg.textContent = `⚠️ Code ${codeNorm} is already registered.`;
     msg.style.color = "red";
     return;
   }
-  regs.push(codeNorm);
+  regs.push({ name: name, code: codeNorm });
   localStorage.setItem("tombolaCodes", JSON.stringify(regs));
 
   msg.textContent = `✅ Registered ${name} with code ${codeNorm}`;

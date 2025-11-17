@@ -377,7 +377,7 @@ th, td {
 }
 
 .tab-button.active {
-  background-color: transparent;
+  background-color: transparent !important;
   color: #ff9800;
   box-shadow: none;
   position: relative;
