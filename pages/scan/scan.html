@@ -119,8 +119,12 @@ window.addEventListener("DOMContentLoaded", () => {
             window.location.href = CONFIG.BASE_PATH + "pages/game/game.html";
           }, 1500);
         } else {
-          msg.textContent = "⚠️ Unknown QR code.";
+          msg.textContent = "⚠️ QR Code not recognised — please try another.";
           msg.className = "warning";
+
+          // Optional: briefly show message then fade it
+          msg.style.opacity = "1";
+          setTimeout(() => { msg.style.opacity = "0.6"; }, 1200);
         }
       },
       (err) => {
