@@ -19,7 +19,7 @@ const CONFIG = {
     "QR009": "*",
     "QR010": "*"
   },
-  HIDDEN_PHRASE: "DANDELION",
+  HIDDEN_PHRASE: "UNIQUE",
   ADMIN_SALT: "YOUR_ADMIN_SALT",
   ADMIN_PIN_LENGTH: 6
 };
