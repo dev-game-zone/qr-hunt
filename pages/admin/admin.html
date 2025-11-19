@@ -57,8 +57,14 @@ body.admin #adminPin::placeholder {
 
 /* Centered (final winner) tweaks - larger scale and a stronger z-index */
 #floating-orbs .letter-box.centered {
-  transition: transform 450ms cubic-bezier(.2,.9,.2,1), box-shadow 450ms ease;
+  transition: transform 450ms cubic-bezier(.2,.9,.2,1), box-shadow 450ms ease, left 450ms ease, top 450ms ease;
   z-index: 10002 !important;
+  /* Fix winner in viewport center so it visibly pops out */
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) scale(1.9) !important;
+  pointer-events: none;
 }
 
 /* ================================
@@ -112,6 +118,23 @@ body.admin #adminPin::placeholder {
   transform: scale(0.3);
   transition: transform 0.9s ease, opacity 0.9s ease;
 }
+
+/* ================================
+   Podium for drawn winners
+================================= */
+#podium { display:flex; justify-content:center; gap:18px; align-items:flex-end; margin-top:18px; }
+.podium-place { width:120px; text-align:center; }
+.podium-orb { width:120px; height:120px; border-radius:50%; margin:0 auto 8px; display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; box-shadow:0 6px 18px rgba(0,0,0,0.12); background:rgba(0,0,0,0.06); }
+.podium-place .label { font-size:0.9rem; color:#333; }
+.podium-place.place1 { transform:translateY(-16px); }
+.podium-place.place2 { transform:translateY(0); }
+.podium-place.place3 { transform:translateY(6px); }
+
+/* Dim ticket list items that already won */
+.ticket.winner { opacity: 0.45; text-decoration: line-through; }
+.podium-orb { font-size:1.05rem; }
+/* Dim floating orbs that already won */
+#floating-orbs .letter-box.won { opacity: 0.45; filter: grayscale(.25); pointer-events: none; }
 
 </style>
 </head>
@@ -184,6 +207,7 @@ body.admin #adminPin::placeholder {
           <button id="startDraw">Start Draw</button>
         </div>
         <p id="winner-msg"></p>
+        <div id="podium" aria-live="polite" aria-atomic="true"></div>
       </div>
 
       <!-- Tombola Tab -->
@@ -250,9 +274,15 @@ window.addEventListener("DOMContentLoaded", () => {
     return { name: c.name, code: c.code.trim().toUpperCase() };
   });
 
+  // persisted winners and current round (0-based)
+  let tombolaWinners = (JSON.parse(localStorage.getItem('tombolaWinners') || '[]') || []);
+  let drawRound = parseInt(localStorage.getItem('tombolaRound') || '0', 10) || 0;
+
   renderTombolaCodes();
+  updateStartButtonLabel();
   notifyOrbView();
   animateFloatingOrbs();
+  renderPodium();
   
   // hide inlined ORBs until ORB View tab is active
   if (floatingOrbs) floatingOrbs.style.display = "none";
@@ -373,9 +403,30 @@ window.addEventListener("DOMContentLoaded", () => {
       t.className = "ticket";
       t.textContent = reg.code;
       t.title = reg.name; // Add tooltip
+      // mark if this code already won a place
+      const win = tombolaWinners.find(w => w.code === reg.code);
+      if (win) {
+        t.classList.add('winner');
+        t.dataset.place = win.place;
+        t.title = `${reg.name} — ${win.placeLabel}`;
+      }
       ticketList.appendChild(t);
     });
     notifyOrbView();
+    renderPodium();
+  }
+
+  function updateStartButtonLabel() {
+    if (!startDrawBtn) return;
+    if (drawRound >= 3) {
+      startDrawBtn.disabled = true;
+      startDrawBtn.textContent = 'All places drawn';
+      return;
+    }
+    const upcomingPlace = 3 - drawRound; // values: 3,2,1 across rounds
+    const suffix = upcomingPlace === 1 ? 'st' : upcomingPlace === 2 ? 'nd' : 'rd';
+    startDrawBtn.disabled = false;
+    startDrawBtn.textContent = `Start Draw — ${upcomingPlace}${suffix} place`;
   }
 
   function renderFloatingOrbs() {
@@ -403,6 +454,16 @@ window.addEventListener("DOMContentLoaded", () => {
       const light = 40 + Math.floor(Math.random() * 21); // 40-60%
       orb.style.backgroundColor = `hsl(${hue}, ${sat}%, ${light}%)`;
       orb.style.color = (light > 60 ? '#000' : '#fff');
+
+      // If this code already won in a previous round, mark as won so it
+      // remains visually excluded and ignored by suspense/pulsing logic.
+      const existingWin = tombolaWinners.find(w => w.code === reg.code);
+      if (existingWin) {
+        orb.classList.add('won', 'winner', 'glow');
+        if (existingWin.color) orb.style.background = existingWin.color;
+        orb.dataset.winnerColor = existingWin.color || '';
+        orb.title = `${reg.name} — ${existingWin.placeLabel}`;
+      }
 
       // Append hidden to measure its real size (text may make it wider than nominal)
       orb.style.visibility = 'hidden';
@@ -446,6 +507,44 @@ window.addEventListener("DOMContentLoaded", () => {
     const winnerMsgElem = document.querySelector('#orbview-tab #winner-msg');
     if (winnerMsgElem) winnerMsgElem.textContent = '';
     container.querySelectorAll('.letter-box').forEach(o => o.classList.remove('winner', 'glow'));
+  }
+
+  function renderPodium() {
+    const podium = document.getElementById('podium');
+    if (!podium) return;
+    // Show up to 3 places (1,2,3) — map stored tombolaWinners by place
+    podium.innerHTML = '';
+    const places = [2, 1, 3]; // left-to-right: 2nd, 1st, 3rd
+    places.forEach(p => {
+      const placeObj = tombolaWinners.find(w => w.place === p);
+      const div = document.createElement('div');
+      div.className = `podium-place place${p}`;
+      const orb = document.createElement('div');
+      orb.className = 'podium-orb';
+      if (placeObj) {
+        const full = (placeObj.name || '').trim();
+        // short form: First + initial of last name (e.g. "Bob D.") to help disambiguate
+        let short = full;
+        const parts = full.split(/\s+/).filter(Boolean);
+        if (parts.length >= 2) {
+          short = parts[0] + ' ' + parts[parts.length-1].charAt(0).toUpperCase() + '.';
+        } else if (parts.length === 1) {
+          short = parts[0];
+        }
+        orb.textContent = short;
+        orb.title = full;
+        if (placeObj.color) orb.style.background = placeObj.color;
+      } else {
+        orb.textContent = '';
+        orb.style.background = 'linear-gradient(135deg,#eee,#ddd)';
+      }
+      const lbl = document.createElement('div');
+      lbl.className = 'label';
+      lbl.textContent = placeObj ? placeObj.placeLabel : '';
+      div.appendChild(orb);
+      div.appendChild(lbl);
+      podium.appendChild(div);
+    });
   }
 
   function animateFloatingOrbs() {
@@ -513,6 +612,29 @@ window.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => confettiCanvas.getContext('2d')?.clearRect(0,0,confettiCanvas.width,confettiCanvas.height), 5000);
   }
 
+  function playFanfare() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const now = ctx.currentTime;
+      const freqs = [880, 1066, 1320]; // short arpeggio
+      freqs.forEach((f, i) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.value = f;
+        o.connect(g);
+        g.connect(ctx.destination);
+        g.gain.setValueAtTime(0, now + i * 0.12);
+        g.gain.linearRampToValueAtTime(0.15, now + i * 0.12 + 0.02);
+        g.gain.linearRampToValueAtTime(0, now + i * 0.12 + 0.18);
+        o.start(now + i * 0.12);
+        o.stop(now + i * 0.12 + 0.2);
+      });
+    } catch (e) {
+      console.log('Audio not available:', e);
+    }
+  }
+
   // Listen for storage updates so the ORB view refreshes when registrations
   // are added from other tabs/windows (e.g., registration page).
   window.addEventListener('storage', (ev) => {
@@ -534,11 +656,15 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  startDrawBtn.onclick = () => {
-    startDrawBtn.disabled = true;
+  // Extracted draw flow to avoid recursive event dispatch when switching tabs.
+  function doStartDraw() {
+    // main draw flow (ensures orbs are visible)
+    if (startDrawBtn) startDrawBtn.disabled = true;
     try { localStorage.setItem('tombolaLocked', '1'); } catch(e) {}
 
-    if (!registeredCodes.length) {
+    // filter out codes that have already won
+    const available = registeredCodes.filter(r => !tombolaWinners.find(w => w.code === r.code));
+    if (!available.length) {
       winnerMsg.textContent = "⚠️ No registered codes.";
       try { localStorage.removeItem('tombolaLocked'); } catch(e) {}
       if (startDrawBtn) startDrawBtn.disabled = false;
@@ -549,15 +675,12 @@ window.addEventListener("DOMContentLoaded", () => {
 
     const orbs = Array.from(document.querySelectorAll('#floating-orbs .letter-box'));
     const suspensionDuration = 15000; // ms
-    const tickInterval = 200; // ms highlight tick
-    let tickTimer = null;
     let startTime = Date.now();
 
     function clearSuspense() {
-      if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
       orbs.forEach(o => o.classList.remove('suspense'));
     }
-    // Helper: smoothly move an orb toward the center and return it after delay
+
     function pulseCenterOrb(orb, duration = 300) {
       if (!orb || orb.classList.contains('centered')) return;
       const parent = orb.parentElement;
@@ -566,31 +689,25 @@ window.addEventListener("DOMContentLoaded", () => {
       const orbW = orb.offsetWidth;
       const orbH = orb.offsetHeight;
 
-      // store current translate values
       const origX = orb._x || 0;
       const origY = orb._y || 0;
 
       const cx = (parentW) / 2 - (orbW / 2);
       const cy = (parentH) / 2 - (orbH / 2);
 
-      // mark as suspended so the animator ignores it
       orb._suspenseCentered = true;
       orb.classList.add('suspense-centered');
-      // move to center and scale slightly and update logical position
       orb._x = cx; orb._y = cy;
       orb._vx = 0; orb._vy = 0;
       orb.style.transform = `translate3d(${cx}px, ${cy}px, 0) scale(1.25)`;
 
-      // after duration, restore original logical position and visual state
       setTimeout(() => {
-        // if the orb became the final centered winner, leave it centered
         if (orb.classList.contains('centered')) {
           orb._suspenseCentered = false;
           orb.classList.remove('suspense-centered');
           return;
         }
         orb._x = origX; orb._y = origY;
-        // restore a small random velocity so motion continues smoothly
         orb._vx = (Math.random() - 0.5) * 1.2;
         orb._vy = (Math.random() - 0.5) * 1.2;
         orb.style.transform = `translate3d(${origX}px, ${origY}px, 0) scale(1)`;
@@ -599,64 +716,101 @@ window.addEventListener("DOMContentLoaded", () => {
       }, duration + 40);
     }
 
-    tickTimer = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      if (elapsed >= suspensionDuration) { clearSuspense(); startCountdown(); return; }
-      // clear previous suspense flags (visual highlights)
-      orbs.forEach(o => o.classList.remove('suspense'));
+    let sequentialActive = true;
+    (async function sequentialPulseLoop() {
+      const holdTime = 1600; // ms to hold each orb in center (calmer)
+      const pauseBetween = 1000; // ms pause after release before next orb
+      while (sequentialActive) {
+        const elapsed = Date.now() - startTime;
+        if (elapsed >= suspensionDuration) break;
 
-      // pick 1-3 random orbs to briefly center and highlight
-      const count = Math.max(1, Math.floor(Math.random() * Math.min(3, orbs.length)));
-      const picked = new Set();
-      for (let i = 0; i < count; i++) {
-        let idx = Math.floor(Math.random() * orbs.length);
-        // avoid duplicates in this tick
-        let tries = 0;
-        while (picked.has(idx) && tries++ < 6) idx = Math.floor(Math.random() * orbs.length);
-        picked.add(idx);
-        const orb = orbs[idx];
-        if (!orb) continue;
+        const candidates = orbs.filter(o => !o.classList.contains('centered') && !o._suspenseCentered && !o.classList.contains('won'));
+        if (candidates.length === 0) {
+          await new Promise(r => setTimeout(r, 300));
+          continue;
+        }
+
+        const orb = candidates[Math.floor(Math.random() * candidates.length)];
+        if (!orb) { await new Promise(r => setTimeout(r, 200)); continue; }
+
         orb.classList.add('suspense');
-        pulseCenterOrb(orb, tickInterval - 40);
+        pulseCenterOrb(orb, holdTime);
+        await new Promise(r => setTimeout(r, holdTime + 80));
+        orb.classList.remove('suspense');
+        await new Promise(r => setTimeout(r, pauseBetween));
       }
-    }, tickInterval);
+      sequentialActive = false;
+      clearSuspense();
+      startCountdown();
+    })();
 
     function startCountdown() {
       dramaticCountdown(() => {
-        const winner = registeredCodes[Math.floor(Math.random() * registeredCodes.length)];
-        revealWinner(winner.code, winner.name);
+        const availableNow = registeredCodes.filter(r => !tombolaWinners.find(w => w.code === r.code));
+        if (!availableNow.length) {
+          winnerMsg.textContent = '⚠️ No eligible candidates for this round.';
+          try { localStorage.removeItem('tombolaLocked'); } catch (e) {}
+          updateStartButtonLabel();
+          return;
+        }
+        const choice = availableNow[Math.floor(Math.random() * availableNow.length)];
+        revealWinner(choice.code, choice.name);
       });
     }
 
     function revealWinner(winnerCode, winnerName) {
-      // finalize
-      winnerMsg.textContent = `🎉 Winner: ${winnerName} (${winnerCode})`;
-      ticketList.querySelectorAll('.ticket').forEach(t => t.classList.remove('winner'));
-      const winnerDiv = Array.from(ticketList.children).find(t => t.textContent.trim().toUpperCase() === String(winnerCode).trim().toUpperCase());
-      if (winnerDiv) winnerDiv.classList.add('winner');
+      const orb = document.querySelector(`#floating-orbs .letter-box[data-code="${winnerCode}"]`);
+      const placeNum = 3 - drawRound; // 3,2,1
+      const suffix = placeNum === 1 ? 'st' : placeNum === 2 ? 'nd' : 'rd';
+      const placeLabel = `${placeNum}${suffix} place`;
 
-      const winnerOrb = Array.from(document.querySelectorAll('#floating-orbs .letter-box')).find(orb => orb.dataset.code === winnerCode);
-      if (winnerOrb) {
-        document.querySelectorAll('#floating-orbs .letter-box.centered').forEach(o => o.classList.remove('centered'));
-        winnerOrb.classList.add('winner', 'glow', 'centered');
-        const parent = winnerOrb.parentElement;
-        const parentW = parent.clientWidth || Math.min(window.innerWidth * 0.95, 900);
-        const parentH = parent.clientHeight || Math.min(window.innerHeight * 0.85, 900);
-        const cx = (parentW) / 2 - (winnerOrb.offsetWidth / 2);
-        const cy = (parentH) / 2 - (winnerOrb.offsetHeight / 2);
-        winnerOrb._vx = 0; winnerOrb._vy = 0;
-        winnerOrb.style.left = '0px'; winnerOrb.style.top = '0px';
-        winnerOrb._x = cx; winnerOrb._y = cy;
-        // Use centered class and explicit transform for scale so the orb grows smoothly
-        winnerOrb.style.transform = `translate3d(${cx}px, ${cy}px, 0) scale(1.9)`;
+      let winnerColor = null;
+      if (orb) {
+        // capture computed background so podium can reuse the color
+        winnerColor = getComputedStyle(orb).backgroundColor || orb.style.backgroundColor || null;
+        orb.dataset.winnerColor = winnerColor;
+        orb.classList.add('winner', 'glow', 'centered', 'won');
+        // ensure it is ignored by suspense loop
+        orb._suspenseCentered = false;
+        // ensure visual emphasis: add a CSS class and a gentle pulse
+        orb.animate([
+          { transform: 'translate(-50%, -50%) scale(1.08)' },
+          { transform: 'translate(-50%, -50%) scale(1.6)' }
+        ], { duration: 600, easing: 'cubic-bezier(.2,.9,.2,1)' });
       }
 
-      runConfetti();
-      clearSuspense();
-      // keep the tombolaLocked flag in storage until admin presses Reset
-      // do not re-enable Start Draw here — Reset will clear the lock and re-enable
+      const winnerObj = { name: winnerName, code: winnerCode, place: placeNum, placeLabel, color: winnerColor };
+      tombolaWinners.push(winnerObj);
+      localStorage.setItem('tombolaWinners', JSON.stringify(tombolaWinners));
+      drawRound = Math.min(3, drawRound + 1);
+      localStorage.setItem('tombolaRound', String(drawRound));
+
+      // Celebration: run confetti and fanfare audio for dramatic effect
+      try { runConfetti(); } catch (e) { console.log('confetti failed', e); }
+      try { playFanfare(); } catch (e) { console.log('fanfare failed', e); }
+
+      renderTombolaCodes();
+      renderPodium();
+      setTimeout(() => {
+        notifyOrbView();
+        updateStartButtonLabel();
+      }, 3500);
     }
-  };
+  }
+
+  // Safe Start Draw handler: ensure ORB tab active before starting
+  if (startDrawBtn) {
+    startDrawBtn.onclick = () => {
+      const orbTabBtn = document.querySelector('.tab-button[data-tab="orbview-tab"]');
+      const isOrbActive = orbTabBtn && orbTabBtn.classList.contains('active');
+      if (orbTabBtn && !isOrbActive) {
+        orbTabBtn.click();
+        setTimeout(() => doStartDraw(), 120);
+        return;
+      }
+      doStartDraw();
+    };
+  }
 
   resetTombolaBtn.onclick = async () => {
     const pin = prompt("Enter Admin PIN to reset Tombola:");
@@ -665,11 +819,16 @@ window.addEventListener("DOMContentLoaded", () => {
     registeredCodes = [];
     localStorage.setItem("tombolaCodes", JSON.stringify(registeredCodes));
     try { localStorage.removeItem('tombolaLocked'); } catch(e) {}
+    // clear persisted winners and reset round
+    tombolaWinners = [];
+    localStorage.removeItem('tombolaWinners');
+    drawRound = 0;
+    localStorage.removeItem('tombolaRound');
     renderTombolaCodes();
       notifyOrbView();
       animateFloatingOrbs();
     // re-enable Start Draw after reset
-    if (startDrawBtn) startDrawBtn.disabled = false;
+    updateStartButtonLabel();
     winnerMsg.textContent = "";
   };
 });

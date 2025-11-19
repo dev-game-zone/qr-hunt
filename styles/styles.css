@@ -225,12 +225,24 @@ th, td {
 .letter-box {
   font-size: 1.6rem;
   font-weight: bold;
-  width: 42px;
-  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 6px;
+  background-color: #bdbdbd;
+  color: white;
+  transition: all 0.25s ease-in-out;
+  transform: scale(1);
+}
+.letter-box {
+  font-size: 1.9rem; /* increased for readability */
+  font-weight: bold;
+  width: 52px; /* slightly larger orb */
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
   background-color: #bdbdbd;
   color: white;
   transition: all 0.25s ease-in-out;
@@ -447,9 +459,23 @@ body.admin .tab-button { min-width: 140px; }
 }
 
 #floating-orbs .letter-box {
-  min-width: 60px;
-  min-height: 60px;
-  padding: 0.4em 0.8em;
+  border-radius: 9999px;
+  background-color: #bdbdbd;
+  color: white;
+  font-weight: bold;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  /* Avoid transitioning position/transform to prevent jitter when JS animates every frame.
+     Keep transitions for color/shadow only and hint the browser to optimize transforms. */
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+  will-change: transform;
+}
+#floating-orbs .letter-box {
+  min-width: 76px; /* larger orbs */
+  min-height: 76px;
+  padding: 0.5em 1em;
   border-radius: 9999px;
   background-color: #bdbdbd;
   color: white;
@@ -466,7 +492,8 @@ body.admin .tab-button { min-width: 140px; }
 /* Ensure orb text is readable and vertically centered regardless of other rules */
 #floating-orbs .letter-box,
 .orb-dynamic {
-  font-size: 14px !important;
+/* increase orb text size */
+  font-size: 16px !important;
   line-height: 1 !important;
   text-align: center;
 }
@@ -475,12 +502,12 @@ body.admin .tab-button { min-width: 140px; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.45em 0.9em;
-  min-width: 2.2em;
-  min-height: 2.2em;
+  padding: 0.55em 1.1em;
+  min-width: 2.6em;
+  min-height: 2.6em;
   border-radius: 9999px;
   background: #eee;
-  font-size: 1em;
+  font-size: 1.05em;
   white-space: nowrap;
   box-sizing: border-box;
   width: auto;
