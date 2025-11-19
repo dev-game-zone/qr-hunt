@@ -46,6 +46,21 @@ body.admin #adminPin::placeholder {
 #floating-orbs .letter-box { position: absolute; transform-origin: center; }
 #floating-orbs .letter-box.winner { z-index: 10001; }
 
+/* Suspense-centering: when an orb is being highlighted during the draw
+   it will briefly move toward the center, scale up, then return. We use
+   translate/scale transitions so the animation stays on the compositor. */
+#floating-orbs .letter-box.suspense-centered {
+  transition: transform 260ms cubic-bezier(.2,.9,.2,1), box-shadow 260ms ease;
+  z-index: 10000;
+  box-shadow: 0 0 30px rgba(255,255,255,0.6);
+}
+
+/* Centered (final winner) tweaks - larger scale and a stronger z-index */
+#floating-orbs .letter-box.centered {
+  transition: transform 450ms cubic-bezier(.2,.9,.2,1), box-shadow 450ms ease;
+  z-index: 10002 !important;
+}
+
 /* ================================
    Optional Glow Animation for Winner
 ================================= */
@@ -379,8 +394,9 @@ window.addEventListener("DOMContentLoaded", () => {
     registeredCodes.forEach(reg => {
       const orb = document.createElement("div");
       orb.className = "letter-box orb-dynamic";
-      orb.textContent = reg.code;
-      orb.title = reg.name; // Add tooltip with player name
+      orb.textContent = reg.name; // Display name in the orb
+      orb.dataset.code = reg.code; // Store code for winner identification
+      orb.title = `${reg.name} (${reg.code})`; // Add tooltip with both name and code
       // random color (HSL) and readable text color
       const hue = Math.floor(Math.random() * 360);
       const sat = 60 + Math.floor(Math.random() * 21); // 60-80%
@@ -435,6 +451,8 @@ window.addEventListener("DOMContentLoaded", () => {
   function animateFloatingOrbs() {
     const orbs = Array.from(document.querySelectorAll("#floating-orbs .letter-box:not(.winner)"));
     orbs.forEach(orb => {
+      // If this orb is temporarily centered for suspense, don't animate it here
+      if (orb._suspenseCentered) return;
       // ignore orbs moved to fixed positioning (winners)
       if (getComputedStyle(orb).position === 'fixed') return;
       
@@ -539,15 +557,67 @@ window.addEventListener("DOMContentLoaded", () => {
       if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
       orbs.forEach(o => o.classList.remove('suspense'));
     }
+    // Helper: smoothly move an orb toward the center and return it after delay
+    function pulseCenterOrb(orb, duration = 300) {
+      if (!orb || orb.classList.contains('centered')) return;
+      const parent = orb.parentElement;
+      const parentW = parent.clientWidth || Math.min(window.innerWidth * 0.95, 900);
+      const parentH = parent.clientHeight || Math.min(window.innerHeight * 0.85, 900);
+      const orbW = orb.offsetWidth;
+      const orbH = orb.offsetHeight;
+
+      // store current translate values
+      const origX = orb._x || 0;
+      const origY = orb._y || 0;
+
+      const cx = (parentW) / 2 - (orbW / 2);
+      const cy = (parentH) / 2 - (orbH / 2);
+
+      // mark as suspended so the animator ignores it
+      orb._suspenseCentered = true;
+      orb.classList.add('suspense-centered');
+      // move to center and scale slightly and update logical position
+      orb._x = cx; orb._y = cy;
+      orb._vx = 0; orb._vy = 0;
+      orb.style.transform = `translate3d(${cx}px, ${cy}px, 0) scale(1.25)`;
+
+      // after duration, restore original logical position and visual state
+      setTimeout(() => {
+        // if the orb became the final centered winner, leave it centered
+        if (orb.classList.contains('centered')) {
+          orb._suspenseCentered = false;
+          orb.classList.remove('suspense-centered');
+          return;
+        }
+        orb._x = origX; orb._y = origY;
+        // restore a small random velocity so motion continues smoothly
+        orb._vx = (Math.random() - 0.5) * 1.2;
+        orb._vy = (Math.random() - 0.5) * 1.2;
+        orb.style.transform = `translate3d(${origX}px, ${origY}px, 0) scale(1)`;
+        orb._suspenseCentered = false;
+        orb.classList.remove('suspense-centered');
+      }, duration + 40);
+    }
 
     tickTimer = setInterval(() => {
       const elapsed = Date.now() - startTime;
       if (elapsed >= suspensionDuration) { clearSuspense(); startCountdown(); return; }
+      // clear previous suspense flags (visual highlights)
       orbs.forEach(o => o.classList.remove('suspense'));
+
+      // pick 1-3 random orbs to briefly center and highlight
       const count = Math.max(1, Math.floor(Math.random() * Math.min(3, orbs.length)));
+      const picked = new Set();
       for (let i = 0; i < count; i++) {
-        const idx = Math.floor(Math.random() * orbs.length);
-        orbs[idx].classList.add('suspense');
+        let idx = Math.floor(Math.random() * orbs.length);
+        // avoid duplicates in this tick
+        let tries = 0;
+        while (picked.has(idx) && tries++ < 6) idx = Math.floor(Math.random() * orbs.length);
+        picked.add(idx);
+        const orb = orbs[idx];
+        if (!orb) continue;
+        orb.classList.add('suspense');
+        pulseCenterOrb(orb, tickInterval - 40);
       }
     }, tickInterval);
 
@@ -562,10 +632,10 @@ window.addEventListener("DOMContentLoaded", () => {
       // finalize
       winnerMsg.textContent = `🎉 Winner: ${winnerName} (${winnerCode})`;
       ticketList.querySelectorAll('.ticket').forEach(t => t.classList.remove('winner'));
-      const winnerDiv = Array.from(ticketList.children).find(t => t.textContent === winnerCode);
+      const winnerDiv = Array.from(ticketList.children).find(t => t.textContent.trim().toUpperCase() === String(winnerCode).trim().toUpperCase());
       if (winnerDiv) winnerDiv.classList.add('winner');
 
-      const winnerOrb = Array.from(document.querySelectorAll('#floating-orbs .letter-box')).find(orb => orb.textContent === winnerCode);
+      const winnerOrb = Array.from(document.querySelectorAll('#floating-orbs .letter-box')).find(orb => orb.dataset.code === winnerCode);
       if (winnerOrb) {
         document.querySelectorAll('#floating-orbs .letter-box.centered').forEach(o => o.classList.remove('centered'));
         winnerOrb.classList.add('winner', 'glow', 'centered');
@@ -577,6 +647,7 @@ window.addEventListener("DOMContentLoaded", () => {
         winnerOrb._vx = 0; winnerOrb._vy = 0;
         winnerOrb.style.left = '0px'; winnerOrb.style.top = '0px';
         winnerOrb._x = cx; winnerOrb._y = cy;
+        // Use centered class and explicit transform for scale so the orb grows smoothly
         winnerOrb.style.transform = `translate3d(${cx}px, ${cy}px, 0) scale(1.9)`;
       }
 
